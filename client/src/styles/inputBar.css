@@ -1,0 +1,64 @@
+.upload-btn {
+  background: #fff;
+  border: 2px solid #222;
+  border-radius: 50%;
+  padding: 4px;
+  margin: 0 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, box-shadow 0.2s;
+  width: 32px;
+  height: 32px;
+}
+
+.upload-btn svg {
+  display: block;
+}
+
+.upload-btn:hover {
+  background: #f2f2f2;
+  box-shadow: 0 0 4px #22222233;
+}.input-bar {
+  position: sticky;
+  bottom: 0;
+  width: 100%;
+  padding: 15px 20px;
+  background: #fff;
+  border-top: 1px solid #ccc;
+  display: flex;
+  justify-content: center;   /* center the whole bar */
+  align-items: center;
+  z-index: 10;
+  gap: 10px;      
+          
+}
+
+.chat-input {
+  flex: none;
+  width: 70%;                /* adjust width so it doesn’t take 100% */
+  padding: 12px 15px;
+  border-radius: 30px;       /* keeps your round look */
+  border: 1px solid #ccc;
+ max-width: 500px;   /* adjust this width as you like */
+  width: 100%; 
+  outline: none;
+  font-size: 1rem;
+}
+
+.send-btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 20px;
+  background: black;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+  
+}
+
+.send-btn:hover {
+  background: #333;
+}

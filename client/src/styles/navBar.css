@@ -1,0 +1,23 @@
+/* src/styles/navBar.css */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background: white;
+  border-bottom: 1px solid #ccc;
+}
+.nav-home {
+  color: #0077cc;
+  font-weight: bold;
+}
+.logo {
+  height: 30px;
+}
+.nav-actions button {
+  background: #eee;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
