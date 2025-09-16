@@ -1,15 +1,26 @@
 // src/components/SideMenu.jsx
 import React from 'react';
-import '../styles/SideMenu.css';
+import '../styles/SideMenu.css'
 
-const SideMenu = () => (
-  <div className="side-menu">
-    <ul>
-      <li>Settings</li>
-      <li>History</li>
-      <li>Logout</li>
-    </ul>
-  </div>
-);
+export default function SideMenu({ open, onToggle }) {
+  return (
+    <aside className={`side-menu ${open ? 'open' : ''}`}>
+      <button
+        className="menu-handle"
+        onClick={onToggle}
+        aria-label={open ? "Close menu" : "Open menu"}
+        title={open ? "Close menu" : "Open menu"}
+      >
+        ⋯
+      </button>
 
-export default SideMenu;
+      <ul>
+        <li>Settings</li>
+        <li>History</li>
+        <li>Logout</li>
+      </ul>
+    </aside>
+  );
+}
+
+

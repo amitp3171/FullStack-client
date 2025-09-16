@@ -6,12 +6,15 @@
   padding: 10px 20px;
   background: white;
   border-bottom: 1px solid #ccc;
+   gap: 12px;
 }
 .nav-home {
   color: #0077cc;
   font-weight: bold;
 }
 .logo {
+  margin: 0 auto;             
+  display: block;
   height: 30px;
 }
 .nav-actions button {
@@ -21,3 +24,8 @@
   border-radius: 6px;
   cursor: pointer;
 }
+
+
+
+
+

@@ -145,7 +145,15 @@ const App = () => {
   return (
     <div className="app-container">
       <Navbar onMenuToggle={() => setMenuOpen(!menuOpen)} />
-      {menuOpen && <SideMenu />}
+
+{menuOpen && (
+  <div className={`side-overlay ${menuOpen ? 'show' : ''}`} onClick={() => setMenuOpen(false)} />
+)}
+
+<SideMenu open={menuOpen} onToggle={() => setMenuOpen(!menuOpen)} />
+
+
+
 
       <div className="main-section">
         {!hasUserInteracted && (

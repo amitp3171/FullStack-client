@@ -13,7 +13,7 @@ const Navbar = ({ onMenuToggle }) => (
     />
     <div className="nav-actions">
       <button className="export-btn">Export</button>
-      <button className="menu-btn" onClick={onMenuToggle}>⋮</button>
+ 
     </div>
   </header>
 );
