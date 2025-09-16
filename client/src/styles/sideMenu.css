@@ -1,19 +1,30 @@
 /* src/styles/sideMenu.css */
 .side-menu {
-  position: absolute;
-  top: 60px;
-  right: 20px;
+  position: fixed;          /* Stays fixed on screen */
+  top: 0;                   /* From very top */
+  left: 0;                  /* Push it to the left edge */
+  height: 100vh;            /* Full viewport height */
+  width: 200px;             /* Sidebar width */
   background: white;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  padding: 10px 20px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  border-right: 1px solid #ccc; /* Right border instead of left */
+  padding: 20px;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.1); /* Shadow on right side */
+  display: flex;            
+  flex-direction: column;   /* Stack items vertically */
+  justify-content: flex-start;
 }
+
+/* Reset list styles */
 .side-menu ul {
   list-style: none;
   padding: 0;
+  margin: 0;
+  flex: 1;
 }
+
+/* Space between items */
 .side-menu li {
-  margin: 10px 0;
+  margin: 30px 0;   /* Even spacing between buttons */
   cursor: pointer;
+  font-size: 16px;
 }
