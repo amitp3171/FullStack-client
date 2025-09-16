@@ -1,6 +1,6 @@
 // SuggestionCards.jsx
 import React from 'react';
-import '../styles/suggestionCards.css';
+import '../styles/SuggestionCards.css';
 
 const suggestions = [
   "show the names of the 10 top workers",

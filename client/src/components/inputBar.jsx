@@ -1,27 +1,19 @@
 // src/components/InputBar.jsx
-import React, { useEffect, useRef, useState } from "react";
-import "../styles/inputBar.css";
-
-const HISTORY_ENDPOINT = "http://localhost:3000/api/files/history";
+import React, { useState } from "react";
+import "../styles/InputBar.css";
 
 const InputBar = ({ onSend }) => {
   const [input, setInput] = useState("");
   const [selectedFile, setSelectedFile] = useState(null); // File | {type:'history', id, name} | null
   const fileInputRef = useRef(null);
 
-  // UI for popover + modal
-  const [showUploadMenu, setShowUploadMenu] = useState(false);
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [history, setHistory] = useState([]); // [{id,name,size,uploadedAt}, ...]
-  const [loadingHistory, setLoadingHistory] = useState(false);
-  const [historyError, setHistoryError] = useState("");
-  const menuRef = useRef(null);
-
-  const handleSend = () => {
-    if (!input.trim() && !selectedFile) return;
-    onSend(input, selectedFile || null);
-    setInput("");
-    setSelectedFile(null);
+  const handleSend = async () => {
+    if (input.trim() || selectedFile) {
+      onSend(input, selectedFile);
+      setInput("");
+      setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   const handleKeyDown = (e) => {

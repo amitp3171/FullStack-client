@@ -1,27 +1,44 @@
 /* Chat area layout */
 .chat-area {
-  display: flex;
+  position: relative;
+  width: 85%;
+  min-height: 420px;
+  padding: 20px;
+  margin: 24px auto;
+  border-radius: 16px;
+  background: transparent;
+  overflow-y: auto;
+  justify-content: center;   /* 👈 vertical centering (if single child) */
+  align-items: center;       /* 👈 horizontal centering */
+  
+}
+
+.placeholder-text {
+  text-align: center;
+  color: #46545c;
+  font-size: 1rem;
+}
+
+/* messages */
+.messages {
+  display:flex;
   flex-direction: column;
-  gap: 8px;                 /* space between bubbles */
-  padding: 16px 24px;
+  gap:10px;
+  margin-right:300px;
+  align-items: center;       /* 👈 center horizontally */
+  justify-content:center;   /* 👈 center vertically */
 }
 
-/* Generic bubble */
-.bubble {
-  position: relative;       /* for tail */
-  max-width: 72%;           /* limit width like texts */
-  width: fit-content;       /* shrink to content */
-  padding: 10px 12px;
-  font-size: 15px;
-  line-height: 1.35;
-  border-radius: 18px;
-  box-shadow: 0 1px 1px rgba(0,0,0,.06);
-  word-wrap: break-word;
-  white-space: pre-wrap;    /* keep newlines from the model */
+.message {
+  max-width: 60%;
+  padding: 10px 15px;
+  border-radius: 12px;
+  font-size: 0.95rem;
 }
 
-/* User (right) */
-.bubble.user {
+.message.user {
+  background: #0078ff;
+  color: white;
   align-self: flex-end;
   background: #0b93f6;      /* iMessage-ish blue */
   color: #fff;
@@ -41,26 +58,13 @@
 .bubble.bot::after {
   content: "";
   position: absolute;
-  bottom: 0;
-  width: 8px; height: 8px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
-.bubble.user::after {
-  right: -4px;
-  background: #0b93f6;
-  clip-path: polygon(0 100%, 100% 0, 100% 100%);  /* small right triangle */
-}
-
-.bubble.bot::after {
-  left: -4px;
-  background: #f1f0f0;
-  clip-path: polygon(0 0, 0 100%, 100% 100%);     /* small left triangle */
-}
-
-/* Typing bubble matches bot style */
-.typing-bubble {
-  background: #f1f0f0;
-  align-self: flex-start;
-  border-bottom-left-radius: 6px;
+.placeholder-text {
+  color: #555;
+  text-align: center;
 }
 

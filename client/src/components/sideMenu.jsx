@@ -1,6 +1,6 @@
 // src/components/SideMenu.jsx
 import React from 'react';
-import '../styles/sideMenu.css';
+import '../styles/SideMenu.css';
 
 const SideMenu = () => (
   <div className="side-menu">
