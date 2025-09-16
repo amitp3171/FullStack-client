@@ -1,5 +1,5 @@
 // frontend/src/App.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar.jsx';
 import SuggestionCards from './components/SuggestionCards.jsx';
 import ChatArea from './components/ChatArea.jsx';
@@ -8,8 +8,6 @@ import SideMenu from './components/SideMenu.jsx';
 import './styles/App.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE;
-
-
 
 const App = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -23,8 +21,24 @@ const App = () => {
   const appendUser = (text) =>
     setMessages((prev) => [...prev, { sender: "user", text }]);
 
+  // Load messages from backend when threadId changes
+  useEffect(() => {
+    if (!threadId) return;
+    async function loadMessages() {
+      try {
+        const res = await fetch(`${API_BASE}/messages/${threadId}`);
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setMessages(data); // only overwrite if DB actually has messages
+        }
+      } catch (err) {
+        console.error("Failed to load messages:", err);
+      }
+    }
+    loadMessages();
+  }, [threadId]);
 
-// Function to handle sending messages (with optional file)
+  // Handle sending messages (with optional file)
   const handleSendMessage = async (text, file) => {
     if (!text.trim() && !file) return;
 
@@ -56,35 +70,32 @@ const App = () => {
       const result = await response.json();
 
       if (result.openai) appendBot(result.openai);
-        if (result.threadId) setThreadId(result.threadId);
+      if (result.threadId) setThreadId(result.threadId);
     } catch (error) {
-        console.error("Chat error:", error);
-         appendBot(`Error: Could not get response. (${error.message})`);
+      console.error("Chat error:", error);
+      appendBot(`Error: Could not get response. (${error.message})`);
     }
   };
 
- 
+  // Run SQL queries
+  const handleRunQuery = async (sql) => {
+    try {
+      const response = await fetch(`${API_BASE}/query/run`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: sql }),
+      });
+      const result = await response.json();
 
-  // Function to run SQL queries
-const handleRunQuery = async (sql) => {
-  try {
-    const response = await fetch(`${API_BASE}/query/run`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: sql }),
-    });
-    const result = await response.json();
-
-    if (result.rows) {
-      setMessages((prev) => [...prev, { sender: "bot", rows: result.rows }]);
-    } else if (result.error) {
-      appendBot("Error running query: " + result.error);
+      if (result.rows) {
+        setMessages((prev) => [...prev, { sender: "bot", rows: result.rows }]);
+      } else if (result.error) {
+        appendBot("Error running query: " + result.error);
+      }
+    } catch (err) {
+      appendBot("Error running query: " + err.message);
     }
-  } catch (err) {
-    appendBot("Error running query: " + err.message);
-  }
-};
-
+  };
 
   return (
     <div className="app-container">
