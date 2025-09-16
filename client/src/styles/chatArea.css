@@ -8,9 +8,8 @@
   border-radius: 16px;
   background: transparent;
   overflow-y: auto;
-  justify-content: center;   /* 👈 vertical centering (if single child) */
-  align-items: center;       /* 👈 horizontal centering */
-  
+  justify-content: center;
+  align-items: center;
 }
 
 .placeholder-text {
@@ -21,12 +20,12 @@
 
 /* messages */
 .messages {
-  display:flex;
+  display: flex;
   flex-direction: column;
-  gap:10px;
-  margin-right:300px;
-  align-items: center;       /* 👈 center horizontally */
-  justify-content:center;   /* 👈 center vertically */
+  gap: 10px;
+  margin-right: 300px;
+  align-items: center;
+  justify-content: center;
 }
 
 .message {
@@ -55,7 +54,46 @@
   height: 100%;
 }
 
-.placeholder-text {
-  color: #555;
-  text-align: center;
+/* ✅ results table inside bot messages */
+.results-table {
+  margin-top: 8px;
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9rem;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.results-table th,
+.results-table td {
+  border: 1px solid #ccc;
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.results-table th {
+  background-color: #f4f4f4;
+  font-weight: bold;
+}
+
+.results-table tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+/* ✅ run button styling */
+.run-query-btn {
+  margin-top: 6px;
+  padding: 4px 10px;
+  font-size: 0.85rem;
+  background: #0078ff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.run-query-btn:hover {
+  background: #005fcc;
 }

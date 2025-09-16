@@ -1,6 +1,6 @@
 // src/components/InputBar.jsx
 import React, { useState } from 'react';
-import '../styles/inputBar.css';
+import '../styles/InputBar.css';
 
 const InputBar = ({ onSend }) => {
   const [input, setInput] = useState("");
@@ -8,11 +8,12 @@ const InputBar = ({ onSend }) => {
   const fileInputRef = React.useRef(null);
 
   const handleSend = async () => {
-    if (input.trim()) {
-      onSend(input, selectedFile);
-      setInput("");
-      setSelectedFile(null);
-    }
+    if (input.trim() || selectedFile) {
+    onSend(input, selectedFile);
+    setInput("");
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
   };
 
   const handleKeyDown = (e) => {

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import '../styles/navBar.css';
+import '../styles/NavBar.css';
 // ...existing code...
 
 const Navbar = ({ onMenuToggle }) => (
