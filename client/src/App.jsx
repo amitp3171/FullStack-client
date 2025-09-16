@@ -1,4 +1,3 @@
-// frontend/src/App.jsx
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar.jsx';
 import SuggestionCards from './components/SuggestionCards.jsx';
@@ -14,9 +13,8 @@ const App = () => {
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [messages, setMessages] = useState([]);
   const [threadId, setThreadId] = useState(null);
-  const [isLoading, setIsLoading] = useState(false); // loading state
+  const [isLoading, setIsLoading] = useState(false);
 
-  // simple upload history (persisted)
   const [uploadHistory, setUploadHistory] = useState(() => {
     try {
       const raw = localStorage.getItem("uploadHistory");
@@ -29,9 +27,7 @@ const App = () => {
     setUploadHistory(arr);
     try {
       localStorage.setItem("uploadHistory", JSON.stringify(arr));
-    } catch {
-      // ignore write errors
-    }
+    } catch {}
   };
 
   const appendBot = (text) =>
@@ -48,7 +44,7 @@ const App = () => {
         const res = await fetch(`${API_BASE}/messages/${threadId}`);
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
-          setMessages(data); // only overwrite if DB actually has messages
+          setMessages(data);
         }
       } catch (err) {
         console.error("Failed to load messages:", err);
@@ -56,14 +52,15 @@ const App = () => {
     }
     loadMessages();
   }, [threadId]);
-// Function to handle sending messages (with optional file)
+
+  // Handle sending user messages or file uploads
   const handleSendMessage = async (text, file) => {
     if (!text?.trim() && !file) return;
     if (text?.trim()) appendUser(text);
     setHasUserInteracted(true);
 
     try {
-      setIsLoading(true); // ✅ start loader
+      setIsLoading(true);
       let response;
 
       if (file) {
@@ -89,7 +86,7 @@ const App = () => {
       if (result.openai) appendBot(result.openai);
       if (result.threadId) setThreadId(result.threadId);
 
-      // stash successful uploads in history
+      // Save successful uploads to history
       if (file && response.ok) {
         const newItem = {
           id: result.fileId || `${Date.now()}`,
@@ -104,18 +101,18 @@ const App = () => {
       console.error("Chat error:", error);
       appendBot(`Error: Could not get response. (${error.message})`);
     } finally {
-      setIsLoading(false); // stop loader
+      setIsLoading(false);
     }
   };
 
-  // Run SQL
-  const handleRunQuery = async (sql) => {
+  // Run SQL query (normal or edited)
+  const handleRunQuery = async (sql, edited = false) => {
     try {
       setIsLoading(true);
       const response = await fetch(`${API_BASE}/query/run`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: sql }),
+        body: JSON.stringify({ query: sql, threadId, edited }),
       });
       const result = await response.json();
 
@@ -131,14 +128,28 @@ const App = () => {
     }
   };
 
-  // History selection
+  // Confirm SQL edit
+  const handleConfirmEdit = (editedQuery, index) => {
+    // 1. Update bot bubble
+    setMessages((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], text: editedQuery, edited: true };
+      return updated;
+    });
+
+    // 2. Save as user message for Mongo history
+    setMessages((prev) => [...prev, { sender: "user", text: editedQuery }]);
+
+    // 3. Run it
+    handleRunQuery(editedQuery, true);
+  };
+
   const handleSelectHistory = async (item) => {
     if (item.threadId) {
       setThreadId(item.threadId);
       appendBot(`Loaded context from **${item.name}**.`);
     } else {
       appendBot(`Selected **${item.name}** from history.`);
-      // optionally call backend to attach file context here
     }
   };
 
@@ -150,7 +161,6 @@ const App = () => {
       <div className="main-section">
         {!hasUserInteracted && (
           <div className="suggestion-overlay">
-            {/* Suggestions visible until first interaction */}
             <SuggestionCards
               onSuggestionClick={(text) => handleSendMessage(text, null)}
             />
@@ -160,7 +170,8 @@ const App = () => {
         <ChatArea
           messages={messages}
           onRunQuery={handleRunQuery}
-          isLoading={isLoading} // ✅ shows typing dots
+          onConfirmEdit={handleConfirmEdit}
+          isLoading={isLoading}
         />
       </div>
 
@@ -168,7 +179,7 @@ const App = () => {
         onSend={handleSendMessage}
         history={uploadHistory}
         onSelectHistory={handleSelectHistory}
-        isLoading={isLoading} // ✅ disables + spinner on Send
+        isLoading={isLoading}
       />
     </div>
   );

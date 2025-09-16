@@ -27,3 +27,40 @@
   transform: translate(-50%, -50%);
   z-index: 5;
 }
+
+/* Inline SQL editing */
+.edit-sql-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sql-editor-inline {
+  width: 100%;
+  font-family: monospace;
+  font-size: 0.9rem;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #aaa;
+  resize: vertical;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.cancel-btn {
+  padding: 4px 10px;
+  font-size: 0.85rem;
+  background: #aaa;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.cancel-btn:hover {
+  background: #888;
+}
+
