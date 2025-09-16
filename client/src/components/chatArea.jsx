@@ -27,10 +27,32 @@ const ChatArea = ({ messages, onRunQuery, isLoading }) => (
             : "";
           return (
             <div key={i} className={`message ${msg.sender}`}>
+              {/* ✅ Case 1: text message */}
               {msg.text && <div>{msg.text}</div>}
+
+              {/* ✅ Case 2: query results */}
               {msg.rows && (
-                <table className="results-table">{/* unchanged */}</table>
+                <table className="results-table">
+                  <thead>
+                    <tr>
+                      {Object.keys(msg.rows[0] || {}).map((col) => (
+                        <th key={col}>{col}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {msg.rows.map((row, rowIndex) => (
+                      <tr key={rowIndex}>
+                        {Object.values(row).map((val, colIndex) => (
+                          <td key={colIndex}>{String(val)}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
+
+              {/* ✅ Case 3: run button for SQL queries */}
               {msg.sender === "bot" &&
                 msg.text &&
                 isSqlQuery(msg.text) &&
@@ -46,7 +68,7 @@ const ChatArea = ({ messages, onRunQuery, isLoading }) => (
           );
         })}
 
-        {/* ✅ Typing indicator */}
+        {/* ✅ Case 4: typing indicator */}
         {isLoading && (
           <div className="message bot typing">
             <span className="dot" />
