@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import Navbar from "./components/Navbar.jsx";
 import SuggestionCards from "./components/SuggestionCards.jsx";
-import ChatArea from "./components/ChatArea.jsx";
+import ChatArea from "./components/chatArea.jsx";
 import InputBar from "./components/InputBar.jsx";
 import SideMenu from "./components/SideMenu.jsx";
 import "./styles/App.css";
@@ -14,7 +14,6 @@ const App = () => {
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [messages, setMessages] = useState([]);
   const [threadId, setThreadId] = useState(null);
-  const [loading, setLoading] = useState(false);
 
   const appendBot = (text) =>
     setMessages((prev) => [...prev, { sender: "bot", text }]);
@@ -24,18 +23,15 @@ const App = () => {
 
   // Function to handle sending messages (with optional file)
   const handleSendMessage = async (text, file) => {
-    if (!text?.trim() && !file) return;
+    if (!text.trim() && !file) return;
 
-    if (text?.trim()) appendUser(text);
+    if (text.trim()) appendUser(text);
     setHasUserInteracted(true);
-
-    // show typing indicator
-    const typingId = showTyping();
-    setLoading(true);
 
     try {
       let response;
       if (file) {
+        // Upload schema + optional text into the same thread
         const formData = new FormData();
         formData.append("file", file);
         if (text?.trim()) formData.append("prompt", text);
@@ -46,6 +42,7 @@ const App = () => {
           body: formData,
         });
       } else {
+        // Flowing chat message (no file)
         response = await fetch(`${API_BASE}/chat/flow`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -55,7 +52,6 @@ const App = () => {
 
       const result = await response.json();
 
-      hideTyping(typingId);
       if (result.openai) appendBot(result.openai);
       if (result.threadId) setThreadId(result.threadId);
     } catch (error) {
@@ -92,13 +88,16 @@ const App = () => {
         {!hasUserInteracted && (
           <div className="suggestion-overlay">
             <SuggestionCards
-              onSuggestionClick={(text) => handleSendMessage(text, null)}
+              onSuggestionClick={(text) => {
+                // Send suggestion as a chat message
+                handleSendMessage(text, null);
+              }}
             />
           </div>
         )}
         <ChatArea messages={messages} onRunQuery={handleRunQuery} />
       </div>
-      <InputBar onSend={handleSendMessage} loading={loading} />
+      <InputBar onSend={handleSendMessage} />
     </div>
   );
 };
