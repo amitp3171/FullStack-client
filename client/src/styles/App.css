@@ -11,13 +11,14 @@
   overflow: hidden;
 }
 
-.main-section {
-  flex: 1;
-  align-items: center;
-  position:relative;
-  overflow-y: auto;
-  display:flex;
-  flex-direction: column;
+.main-section { align-items: stretch; }
+
+.chat-area {
+  width: 100%;
+  max-width: 820px;      /* tweak to taste */
+  margin-left: 21%;     /* left gutter */
+  margin-right: auto;    /* prevents centering */
+  align-items: flex-start;
 }
 
 .suggestion-overlay {
