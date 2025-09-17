@@ -27,7 +27,9 @@ const App = () => {
     setUploadHistory(arr);
     try {
       localStorage.setItem("uploadHistory", JSON.stringify(arr));
-    } catch {}
+    } catch {
+      // Ignore write errors
+    }
   };
 
   const appendBot = (text) =>
