@@ -1,0 +1,175 @@
+/* ================= Input Bar (keep yours) ================= */
+.input-bar {
+  position: sticky;
+  bottom: 0;
+  width: 100%;
+  padding: 15px 20px;
+  background: #fff;
+  border-top: 1px solid #ccc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  gap: 10px;
+}
+
+.chat-input {
+  flex: none;
+  width: 70%;
+  max-width: 500px;
+  padding: 12px 15px;
+  border-radius: 30px;
+  border: 1px solid #ccc;
+  outline: none;
+  font-size: 1rem;
+}
+
+.send-btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 20px;
+  background: black;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+.send-btn:hover { background: #333; }
+
+.file-preview {
+  display: inline-flex;
+  align-items: center;
+  background: #f6f6f6;
+  border: 1px solid #ddd;
+  border-radius: 16px;
+  padding: 2px 10px 2px 6px;
+  margin: 0 8px;
+  font-size: 0.95em;
+  color: #222;
+  box-shadow: 0 1px 2px #00000008;
+}
+.file-preview svg { margin-right: 4px; }
+
+/* ================= Upload button + dropdown ================= */
+/* Anchor for the dropdown */
+.upload-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.upload-btn {
+  background: #fff;
+  border: 2px solid #222;
+  border-radius: 50%;     /* ⬅️ makes it circular */
+  width: 40px;            /* same width & height */
+  height: 40px;
+  margin: 0 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, box-shadow 0.2s;
+  padding: 0;             /* no extra padding */
+}
+
+.upload-btn:hover {
+  background: #f2f2f2;
+  box-shadow: 0 0 4px #22222233;
+}
+
+.upload-btn svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+  pointer-events: none;
+}
+
+/* Dropdown menu */
+/* Upload menu - drop UP instead of down */
+.upload-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);   /* ⬅️ instead of top */
+  min-width: 210px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 -12px 30px rgba(0,0,0,0.12); /* shadow pointing upward */
+  padding: 6px;
+  z-index: 2000;
+}
+
+
+.upload-menu-item {
+  width: 100%;
+  background: transparent;
+  border: none;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.upload-menu-item:hover:not(:disabled) { background: #f5f7fb; }
+.upload-menu-item:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ================= Modal (history) ================= */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4000;
+}
+.modal {
+  width: min(680px, 92vw);
+  max-height: 70vh;
+  overflow: auto;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  padding: 14px 14px 6px 14px;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 4px 8px 6px;
+  border-bottom: 1px solid #eef2f7;
+  margin-bottom: 8px;
+}
+.icon-btn { border: none; background: transparent; font-size: 1rem; cursor: pointer; }
+
+.history-list { list-style: none; display: flex; flex-direction: column; gap: 8px; padding: 6px 2px 10px 2px; margin: 0; }
+.history-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fafafa;
+}
+.history-meta { display: grid; gap: 2px; }
+.history-name { font-weight: 600; }
+.history-sub { color: #6b7280; font-size: 0.85rem; }
+.btn { border: none; background: #0078ff; color: #fff; border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+.btn-small { padding: 6px 10px; font-size: 0.85rem; }
+
+.send-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Minimal spinner inside the Send button */
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #ffffff;
+  border-top-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.8s linear infinite;
+  vertical-align: middle;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
