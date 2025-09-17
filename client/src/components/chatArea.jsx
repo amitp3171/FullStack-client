@@ -1,4 +1,3 @@
-// src/components/ChatArea.jsx
 import React from "react";
 import "../styles/ChatArea.css";
 
@@ -25,12 +24,53 @@ const ChatArea = ({ messages, onRunQuery, isLoading }) => (
           const cleanedText = msg.text
             ? msg.text.replace(/```sql|```/g, "").trim()
             : "";
+
+          const rows = Array.isArray(msg.rows) ? msg.rows : [];
+          const cols = rows.length ? Object.keys(rows[0] ?? {}) : [];
+
           return (
             <div key={i} className={`message ${msg.sender}`}>
-              {msg.text && <div>{msg.text}</div>}
-              {msg.rows && (
-                <table className="results-table">{/* unchanged */}</table>
+              {/* If there's a downloadable file, show a clean inline link */}
+              {msg.download ? (
+                <div className="download-inline">
+                  Your file is ready,{" "}
+                  <a
+                    className="file-link"
+                    href={msg.download.url}
+                    download={msg.download.filename}
+                  >
+                    {msg.download.filename}
+                  </a>
+                  .
+                </div>
+              ) : (
+                // Otherwise show normal text
+                msg.text && <div className="message-text">{msg.text}</div>
               )}
+
+              {/* Query results table */}
+              {rows.length > 0 && (
+                <table className="results-table">
+                  <thead>
+                    <tr>
+                      {cols.map((c) => (
+                        <th key={c}>{c}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((r, ri) => (
+                      <tr key={ri}>
+                        {cols.map((c, ci) => (
+                          <td key={ci}>{String(r[c])}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+
+              {/* Run button for SQL-looking bot responses */}
               {msg.sender === "bot" &&
                 msg.text &&
                 isSqlQuery(msg.text) &&
@@ -46,7 +86,7 @@ const ChatArea = ({ messages, onRunQuery, isLoading }) => (
           );
         })}
 
-        {/* ✅ Typing indicator */}
+        {/* Typing indicator */}
         {isLoading && (
           <div className="message bot typing">
             <span className="dot" />

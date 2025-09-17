@@ -1,11 +1,11 @@
 // frontend/src/App.jsx
-import React, { useState, useEffect } from 'react';
-import Navbar from './components/Navbar.jsx';
-import SuggestionCards from './components/SuggestionCards.jsx';
-import ChatArea from './components/ChatArea.jsx';
-import InputBar from './components/InputBar.jsx';
-import SideMenu from './components/SideMenu.jsx';
-import './styles/App.css';
+import React, { useState, useEffect } from "react";
+import Navbar from "./components/Navbar.jsx";
+import SuggestionCards from "./components/SuggestionCards.jsx";
+import ChatArea from "./components/chatArea.jsx";
+import InputBar from "./components/InputBar.jsx";
+import SideMenu from "./components/SideMenu.jsx";
+import "./styles/App.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
@@ -56,7 +56,7 @@ const App = () => {
     }
     loadMessages();
   }, [threadId]);
-// Function to handle sending messages (with optional file)
+  // Function to handle sending messages (with optional file)
   const handleSendMessage = async (text, file) => {
     if (!text?.trim() && !file) return;
     if (text?.trim()) appendUser(text);
@@ -86,8 +86,29 @@ const App = () => {
 
       const result = await response.json();
 
-      if (result.openai) appendBot(result.openai);
       if (result.threadId) setThreadId(result.threadId);
+
+      // If backend returned a downloadable file, push a message that includes it
+      if (result.download) {
+        // Build an absolute URL so it hits the API host/port, not the UI host/port
+        const apiOrigin = new URL(API_BASE).origin; // e.g. "http://localhost:3000"
+        const href = result.download.url.startsWith("http")
+          ? result.download.url
+          : `${apiOrigin}${result.download.url}`; // "/api/db/download/ID"
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "bot",
+            text: result.openai || "Your file is ready.",
+            download: {
+              url: href, // <-- absolute URL from server
+              filename: result.download.filename,
+            },
+          },
+        ]);
+      } else if (result.openai) {
+        appendBot(result.openai);
+      }
 
       // stash successful uploads in history
       if (file && response.ok) {
@@ -146,14 +167,14 @@ const App = () => {
     <div className="app-container">
       <Navbar onMenuToggle={() => setMenuOpen(!menuOpen)} />
 
-{menuOpen && (
-  <div className={`side-overlay ${menuOpen ? 'show' : ''}`} onClick={() => setMenuOpen(false)} />
-)}
+      {menuOpen && (
+        <div
+          className={`side-overlay ${menuOpen ? "show" : ""}`}
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
 
-<SideMenu open={menuOpen} onToggle={() => setMenuOpen(!menuOpen)} />
-
-
-
+      <SideMenu open={menuOpen} onToggle={() => setMenuOpen(!menuOpen)} />
 
       <div className="main-section">
         {!hasUserInteracted && (
