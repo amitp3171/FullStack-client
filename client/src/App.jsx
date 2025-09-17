@@ -15,22 +15,24 @@ const App = () => {
   const [threadId, setThreadId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [uploadHistory, setUploadHistory] = useState(() => {
-    try {
-      const raw = localStorage.getItem("uploadHistory");
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
+  // Changed: Fetch upload history from backend instead of localStorage
+  const [uploadHistory, setUploadHistory] = useState([]);
+
+  // Load upload history from backend on component mount
+  useEffect(() => {
+    async function loadUploadHistory() {
+      try {
+        const res = await fetch(`${API_BASE}/history/uploads`);
+        if (res.ok) {
+          const data = await res.json();
+          setUploadHistory(data);
+        }
+      } catch (error) {
+        console.error("Failed to load upload history:", error);
+      }
     }
-  });
-  const saveHistory = (arr) => {
-    setUploadHistory(arr);
-    try {
-      localStorage.setItem("uploadHistory", JSON.stringify(arr));
-    } catch {
-      // Ignore write errors
-    }
-  };
+    loadUploadHistory();
+  }, []);
 
   const appendBot = (text) =>
     setMessages((prev) => [...prev, { sender: "bot", text }]);
@@ -70,12 +72,12 @@ const App = () => {
         formData.append("file", file);
         if (text?.trim()) formData.append("prompt", text);
         if (threadId) formData.append("threadId", threadId);
-// Upload file
+        // Upload file
         response = await fetch(`${API_BASE}/upload`, {
           method: "POST",
           body: formData,
         });
- // Send text message       
+        // Send text message       
       } else {
         response = await fetch(`${API_BASE}/chat/flow`, {
           method: "POST",
@@ -89,16 +91,20 @@ const App = () => {
       if (result.openai) appendBot(result.openai);
       if (result.threadId) setThreadId(result.threadId);
 
-      // Save successful uploads to history
+      // Removed: localStorage history saving since it's now handled by backend
+      // Files are automatically saved to history via the database
+
+      // Refresh upload history after successful upload
       if (file && response.ok) {
-        const newItem = {
-          id: result.fileId || `${Date.now()}`,
-          name: file.name,
-          size: file.size,
-          updatedAt: new Date().toISOString(),
-          threadId: result.threadId || null,
-        };
-        saveHistory([newItem, ...uploadHistory].slice(0, 20));
+        try {
+          const res = await fetch(`${API_BASE}/history/uploads`);
+          if (res.ok) {
+            const data = await res.json();
+            setUploadHistory(data);
+          }
+        } catch (error) {
+          console.error("Failed to refresh upload history:", error);
+        }
       }
     } catch (error) {
       console.error("Chat error:", error);
@@ -159,6 +165,17 @@ const App = () => {
     if (item.threadId) {
       setThreadId(item.threadId);
       appendBot(`Loaded context from **${item.name}**.`);
+      
+      // Optionally download and process the file if needed
+      try {
+        const response = await fetch(`${API_BASE}/history/download/${item.id}`);
+        if (response.ok) {
+          console.log("File downloaded from history:", item.name);
+          // You can process the file here if needed for the context
+        }
+      } catch (error) {
+        console.error("Failed to download file:", error);
+      }
     } else {
       appendBot(`Selected **${item.name}** from history.`);
     }

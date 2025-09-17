@@ -4,7 +4,7 @@ import "../styles/InputBar.css";
 
 const InputBar = ({
   onSend,
-  history = [], // [{ id, name, size?, updatedAt?, threadId? }]
+  history = [], // Now expects: [{ id, name, size?, updatedAt?, threadId?, preview? }]
   onSelectHistory, // (item) => void
   accept = ".db,.sqlite,.sql,.csv,.json,.xlsx,.xls",
 }) => {
@@ -193,6 +193,7 @@ const InputBar = ({
                         {item.updatedAt
                           ? new Date(item.updatedAt).toLocaleString()
                           : ""}
+                        {item.preview && ` • ${item.preview}`}
                       </div>
                     </div>
                     <button
