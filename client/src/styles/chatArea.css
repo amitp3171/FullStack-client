@@ -9,16 +9,16 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+  margin-right: 0px;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Chat bubbles */
-.chat-bubble {
-  max-width: 70%;
-  padding: 10px 14px;
-  border-radius: 14px;
-  line-height: 1.4;
-  word-wrap: break-word;
+.message {
+  max-width: 60%;
+  padding: 10px 15px;
+  border-radius: 12px;
   font-size: 0.95rem;
 }
 
@@ -44,8 +44,8 @@
   font-style: italic;
 }
 
-/* SQL Result Table */
-.sql-result {
+/* results table inside bot messages */
+.results-table {
   margin-top: 8px;
   overflow-x: auto;
 }
@@ -75,10 +75,8 @@
   background: #f9fafb;
 }
 
-/* Buttons under SQL */
-.query-actions {
-  display: flex;
-  gap: 8px;
+/* run button styling */
+.run-query-btn {
   margin-top: 6px;
 }
 
@@ -179,4 +177,24 @@
 @keyframes chat-bounce {
   0%, 80%, 100% { transform: translateY(0); opacity: 0.35; }
   40% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* Preserve line breaks in messages */
+.message-text { white-space: pre-wrap; }
+
+/* Inline download line + link */
+.download-inline {
+  margin-top: 4px;
+  font-size: 0.95rem;
+  color: #222;
+}
+
+.file-link {
+  color: #0b5fff;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.file-link:hover {
+  text-decoration: none;
 }

@@ -1,19 +1,75 @@
 /* src/styles/sideMenu.css */
-.side-menu {
-  position: absolute;
-  top: 60px;
-  right: 20px;
-  background: white;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  padding: 10px 20px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+:root {
+  --panel-w: 240px;   /* sidebar width */
+  --handle-w: 40px;   /* visible tab when closed */
 }
+
+/* Drawer */
+.side-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--panel-w);
+  height: 100vh;
+  background: #fff;
+  border-right: 1px solid #ccc;
+  box-shadow: 2px 0 12px rgba(0,0,0,.12);
+  padding: 20px;
+  z-index: 1000;
+
+  /* Keep a sliver (the handle) visible when closed */
+  transform: translateX(calc(-100% + var(--handle-w)));
+  transition: transform .25s ease;
+}
+
+/* Open state: fully visible */
+.side-menu.open {
+  transform: translateX(0);
+}
+
+/* The three-dots handle that lives on the menu edge */
+.menu-handle {
+  position: absolute;
+  top: 12px;
+  right: calc(var(--handle-w) * -1); /* stick out */
+  width: var(--handle-w);
+  height: 40px;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  box-shadow: 2px 0 8px rgba(0,0,0,.12);
+  cursor: pointer;
+  user-select: none;
+  z-index: 1100; /* above overlay */
+  font-size: 20px; /* makes the dots larger */
+}
+
+/* Backdrop only when open */
+.side-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.35);
+  z-index: 900;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease;
+}
+.side-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Menu items spacing */
 .side-menu ul {
   list-style: none;
+  margin: 0;
   padding: 0;
 }
 .side-menu li {
-  margin: 10px 0;
+  margin: 28px 0;
   cursor: pointer;
+  font-size: 16px;
 }

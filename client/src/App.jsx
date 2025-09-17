@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import Navbar from './components/Navbar.jsx';
-import SuggestionCards from './components/SuggestionCards.jsx';
-import ChatArea from './components/ChatArea.jsx';
-import InputBar from './components/InputBar.jsx';
-import SideMenu from './components/SideMenu.jsx';
-import './styles/App.css';
+// frontend/src/App.jsx
+import React, { useState, useEffect } from "react";
+import Navbar from "./components/Navbar.jsx";
+import SuggestionCards from "./components/SuggestionCards.jsx";
+import ChatArea from "./components/chatArea.jsx";
+import InputBar from "./components/InputBar.jsx";
+import SideMenu from "./components/SideMenu.jsx";
+import "./styles/App.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
@@ -86,10 +87,54 @@ const App = () => {
 
       const result = await response.json();
 
-      if (result.openai) appendBot(result.openai);
       if (result.threadId) setThreadId(result.threadId);
 
+      // If backend returned a downloadable file, push a message that includes it
+      if (result.download) {
+        // Build an absolute URL so it hits the API host/port, not the UI host/port
+        const apiOrigin = new URL(API_BASE).origin; // e.g. "http://localhost:3000"
+        const href = result.download.url.startsWith("http")
+          ? result.download.url
+          : `${apiOrigin}${result.download.url}`; // "/api/db/download/ID"
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "bot",
+            text: result.openai || "Your file is ready.",
+            download: {
+              url: href, // <-- absolute URL from server
+              filename: result.download.filename,
+            },
+          },
+        ]);
+      } else if (result.openai) {
+        appendBot(result.openai);
+      }
+
+      // If backend returned a downloadable file, push a message that includes it
+      if (result.download) {
+        // Build an absolute URL so it hits the API host/port, not the UI host/port
+        const apiOrigin = new URL(API_BASE).origin; // e.g. "http://localhost:3000"
+        const href = result.download.url.startsWith("http")
+          ? result.download.url
+          : `${apiOrigin}${result.download.url}`; // "/api/db/download/ID"
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "bot",
+            text: result.openai || "Your file is ready.",
+            download: {
+              url: href, // <-- absolute URL from server
+              filename: result.download.filename,
+            },
+          },
+        ]);
+      } else if (result.openai) {
+        appendBot(result.openai);
+      }
+
       // Save successful uploads to history
+      
       if (file && response.ok) {
         const newItem = {
           id: result.fileId || `${Date.now()}`,
@@ -167,7 +212,15 @@ const App = () => {
   return (
     <div className="app-container">
       <Navbar onMenuToggle={() => setMenuOpen(!menuOpen)} />
-      {menuOpen && <SideMenu />}
+
+      {menuOpen && (
+        <div
+          className={`side-overlay ${menuOpen ? "show" : ""}`}
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
+
+      <SideMenu open={menuOpen} onToggle={() => setMenuOpen(!menuOpen)} />
 
       <div className="main-section">
         {!hasUserInteracted && (
