@@ -68,11 +68,12 @@ const App = () => {
         formData.append("file", file);
         if (text?.trim()) formData.append("prompt", text);
         if (threadId) formData.append("threadId", threadId);
-
+// Upload file
         response = await fetch(`${API_BASE}/upload`, {
           method: "POST",
           body: formData,
         });
+ // Send text message       
       } else {
         response = await fetch(`${API_BASE}/chat/flow`, {
           method: "POST",
@@ -137,11 +138,19 @@ const App = () => {
       return updated;
     });
 
-    // 2. Save as user message for Mongo history
-    setMessages((prev) => [...prev, { sender: "user", text: editedQuery }]);
-
-    // 3. Run it
-    handleRunQuery(editedQuery, true);
+    // edit the "text" field of the bot message at "index" in the database
+    const updateMessageInDB = async () => {
+      try {
+        await fetch(`${API_BASE}/messages/${messages[index]._id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: editedQuery }),
+        });
+      } catch (error) {
+        console.error("Failed to update message:", error);
+      }
+    };
+    updateMessageInDB();
   };
 
   const handleSelectHistory = async (item) => {

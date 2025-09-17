@@ -87,7 +87,7 @@ const ChatArea = ({ messages, onRunQuery, onConfirmEdit, isLoading }) => {
                           setEditingIndex(null);
                         }}
                       >
-                        Run Edited Query
+                        Save Query
                       </button>
                     </div>
                   </div>
@@ -132,7 +132,14 @@ const ChatArea = ({ messages, onRunQuery, onConfirmEdit, isLoading }) => {
         );
       })}
 
-      {isLoading && <div className="loading-indicator">Thinking...</div>}
+    {isLoading && (
+  <div className="chat-bubble bot-bubble typing">
+    <span className="dot" />
+    <span className="dot" />
+    <span className="dot" />
+  </div>
+)}
+
     </div>
   );
 };
