@@ -235,9 +235,21 @@ const App = () => {
     }
   };
 
+  // Start a new chat
+  const handleNewChat = () => {
+    localStorage.removeItem("activeThreadId"); // clear stored chat
+    setThreadId(null);
+    setMessages([]);
+    setHasUserInteracted(false);
+  };
+
   return (
     <div className="app-container">
-      <Navbar onMenuToggle={() => setMenuOpen(!menuOpen)} />
+      <Navbar 
+        onMenuToggle={() => setMenuOpen(!menuOpen)} 
+        onNewChat={handleNewChat} 
+      />
+
       <SideMenu
         open={menuOpen}
         onToggle={() => setMenuOpen(!menuOpen)}

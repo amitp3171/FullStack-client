@@ -25,6 +25,19 @@
   cursor: pointer;
 }
 
+.new-chat-btn {
+  background: #0078ff;
+  color: rgb(135, 179, 77);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  margin-right: 10px;
+}
+.new-chat-btn:hover {
+  background: #005fcc;
+}
 
 
 
