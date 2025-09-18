@@ -1,4 +1,3 @@
-// frontend/src/components/InputBar.jsx
 import React, { useState, useRef, useEffect } from "react";
 import "../styles/InputBar.css";
 
@@ -7,9 +6,11 @@ const InputBar = ({
   history = [], // Now expects: [{ id, name, size?, updatedAt?, threadId?, preview? }]
   onSelectHistory, // (item) => void
   accept = ".db,.sqlite,.sql,.csv,.json,.xlsx,.xls",
+  selectedFile, // New prop
+  onFileSelect, // New prop
 }) => {
   const [input, setInput] = useState("");
-  const [selectedFile, setSelectedFile] = useState(null);
+  // const [selectedFile, setSelectedFile] = useState(null); // Removed, now a prop
   const [menuOpen, setMenuOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -20,7 +21,7 @@ const InputBar = ({
     if (input.trim() || selectedFile) {
       onSend?.(input, selectedFile);
       setInput("");
-      setSelectedFile(null);
+      // onFileSelect(null); // Clearing is handled by App component after send
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
@@ -36,7 +37,7 @@ const InputBar = ({
 
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
-    if (file) setSelectedFile(file);
+    if (file) onFileSelect(file); // Use prop setter
     // allow selecting same file again later
     event.target.value = "";
   };

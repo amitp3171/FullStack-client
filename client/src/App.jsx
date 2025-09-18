@@ -14,6 +14,7 @@ const App = () => {
   const [messages, setMessages] = useState([]);
   const [threadId, setThreadId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null); // Moved from InputBar
 
   // Changed: Fetch upload history from backend instead of localStorage
   const [uploadHistory, setUploadHistory] = useState([]);
@@ -77,7 +78,7 @@ const App = () => {
           method: "POST",
           body: formData,
         });
-        // Send text message       
+ // Send text message       
       } else {
         // FIXED: Ensure we're sending the threadId for text messages too
         response = await fetch(`${API_BASE}/chat/flow`, {
@@ -95,10 +96,10 @@ const App = () => {
       if (result.openai) appendBot(result.openai);
       if (result.threadId) setThreadId(result.threadId);
 
-      // Removed: localStorage history saving since it's now handled by backend
-      // Files are automatically saved to history via the database
+      // Clear the selected file after sending
+      if (file) setSelectedFile(null);
 
-      // Refresh upload history after successful upload
+      // Save successful uploads to history
       if (file && response.ok) {
         try {
           const res = await fetch(`${API_BASE}/history/uploads`);
@@ -167,22 +168,31 @@ const App = () => {
   };
 
   const handleSelectHistory = async (item) => {
-    if (item.threadId) {
-      setThreadId(item.threadId);
-      appendBot(`Loaded context from **${item.name}**.`);
-      
-      // Optionally download and process the file if needed
-      try {
-        const response = await fetch(`${API_BASE}/history/download/${item.id}`);
-        if (response.ok) {
-          console.log("File downloaded from history:", item.name);
-          // You can process the file here if needed for the context
-        }
-      } catch (error) {
-        console.error("Failed to download file:", error);
+    // When a history item is selected, fetch it and set it as the selected file.
+    if (!item.id) {
+      console.error("History item has no ID to download.", item);
+      appendBot("Error: Cannot use this history item as it has no ID.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${API_BASE}/history/download/${item.id}`);
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}`);
       }
-    } else {
-      appendBot(`Selected **${item.name}** from history.`);
+
+      const blob = await response.blob();
+      const file = new File([blob], item.name, { type: item.mimeType });
+
+      // Set the fetched file as the currently selected file
+      setSelectedFile(file);
+
+    } catch (error) {
+      console.error("Failed to use file from history:", error);
+      appendBot(`Error using file from history: ${error.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -215,6 +225,8 @@ const App = () => {
         history={uploadHistory}
         onSelectHistory={handleSelectHistory}
         isLoading={isLoading}
+        selectedFile={selectedFile}
+        onFileSelect={setSelectedFile}
       />
     </div>
   );
