@@ -1,191 +1,383 @@
 /* ===== Chat Area ===== */
 .chat-area {
+
   position: relative;
+
   width: 85%;
+
   min-height: 420px;
+
   padding: 20px;
+
   margin: 24px auto;
+
   border-radius: 16px;
+
   background: transparent;
+
   overflow-y: auto;
 
-  /* unified layout from both branches */
   display: flex;
+
   flex-direction: column;
-  gap: 12px;                /* (was 10/12) choose 12 for a bit more room */
-  align-items: stretch;     /* let bubbles align left/right naturally */
-  justify-content: flex-start;
+
+  gap: 10px;
+
+  margin-right: 0px;
+
+  align-items: center;
+
+  justify-content: center;
+
 }
 
-/* ===== Chat bubbles ===== */
+
+
+
+/* Chat bubbles */
+
 .chat-bubble {
-  max-width: 70%;           /* (was 60/70) choose 70 for better readability */
+
+  max-width: 70%;
+
   padding: 10px 14px;
+
   border-radius: 14px;
+
   line-height: 1.4;
+
   word-wrap: break-word;
+
   font-size: 0.95rem;
+
 }
+
+
 
 .user-bubble {
+
   align-self: flex-end;
-  background: #2563eb;      /* blue-600 */
-  color: #fff;
+
+  background: #2563eb;
+  /* blue-600 */
+
+  color: white;
+
   border-bottom-right-radius: 4px;
+
 }
+
+
 
 .bot-bubble {
+
   align-self: flex-start;
-  background: #e5e7eb;      /* gray-200 */
+
+  background: #e5e7eb;
+  /* gray-200 */
+
   color: #111;
+
   border-bottom-left-radius: 4px;
+
 }
 
-/* Preserve line breaks for normal text blocks */
-.message-text { white-space: pre-wrap; }
 
-/* Edited label under SQL message */
+
+/* Edited label */
+
 .edited-label {
+
   font-size: 0.75rem;
+
   color: #555;
+
   margin-top: 4px;
+
   font-style: italic;
+
 }
 
-/* ===== SQL actions (Run / Edit) ===== */
-.query-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 6px;
-}
 
-.run-query-btn,
-.edit-query-btn {
-  padding: 4px 10px;
-  font-size: 0.85rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
 
-.run-query-btn {
-  background: #2563eb; color: #fff;
-}
-.run-query-btn:hover {
-  background: #1d4ed8;
-}
+/* results table inside bot messages */
 
-.edit-query-btn {
-  background: #f59e0b; color: #fff;   /* amber */
-}
-.edit-query-btn:hover {
-  background: #d97706;
-}
+.results-table {
 
-/* ===== Inline SQL editor ===== */
-.sql-editor {
-  width: 100%;
-  font-family: monospace;
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  margin-top: 10px;
-  resize: vertical;
-  background: #fff;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
   margin-top: 8px;
-}
-.modal-actions button {
-  padding: 5px 12px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-.modal-actions button:first-child {
-  background: #e5e7eb; color: #111;
-}
-.modal-actions button:last-child {
-  background: #2563eb; color: #fff;
-}
 
-/* ===== SQL result table ===== */
-.sql-result {
-  margin-top: 8px;
   overflow-x: auto;
+
 }
+
+
 
 .sql-result table {
+
   width: 100%;
+
   border-collapse: collapse;
+
   font-size: 0.9rem;
-  background: #fff;
+
+  background: white;
+
   border-radius: 8px;
+
   overflow: hidden;
+
 }
+
+
 
 .sql-result th,
+
 .sql-result td {
+
   border: 1px solid #ddd;
+
   padding: 6px 10px;
+
   text-align: left;
+
 }
+
+
 
 .sql-result th {
-  background: #f3f4f6;      /* light gray */
+
+  background: #f3f4f6;
+  /* light gray */
+
   font-weight: 600;
+
 }
+
+
 
 .sql-result tr:nth-child(even) {
+
   background: #f9fafb;
+
 }
 
-/* ===== Inline download line + link ===== */
-.download-inline {
-  margin-top: 4px;
-  font-size: 0.95rem;
-  color: #222;
-}
-.file-link {
-  color: #0b5fff;
-  text-decoration: underline;
-  font-weight: 600;
-}
-.file-link:hover { text-decoration: none; }
 
-/* ===== Loading & typing indicator ===== */
-.loading-indicator {
-  align-self: center;
+
+/* run button styling */
+
+.run-query-btn {
+
+  margin-top: 6px;
+
+}
+
+
+
+.run-query-btn {
+
+  padding: 4px 10px;
+
   font-size: 0.85rem;
-  color: #555;
-  font-style: italic;
+
+  background: #2563eb;
+
+  color: white;
+
+  border: none;
+
+  border-radius: 6px;
+
+  cursor: pointer;
+
+  transition: background 0.2s ease;
+
 }
+
+
+
+.run-query-btn:hover {
+
+  background: #1d4ed8;
+
+}
+
+
+
+.edit-query-btn {
+
+  padding: 4px 10px;
+
+  font-size: 0.85rem;
+
+  background: #f59e0b;
+  /* amber */
+
+  color: white;
+
+  border: none;
+
+  border-radius: 6px;
+
+  cursor: pointer;
+
+  transition: background 0.2s ease;
+
+}
+
+
+
+.edit-query-btn:hover {
+
+  background: #d97706;
+
+}
+
+
+
+/* Inline SQL editor */
+
+.sql-editor {
+
+  width: 100%;
+
+  font-family: monospace;
+
+  padding: 10px;
+
+  border-radius: 6px;
+
+  border: 1px solid #ccc;
+
+  margin-top: 10px;
+
+  resize: vertical;
+
+  background: #fff;
+
+}
+
+
+
+.modal-actions {
+
+  display: flex;
+
+  justify-content: flex-end;
+
+  gap: 10px;
+
+  margin-top: 8px;
+
+}
+
+
+
+.modal-actions button {
+
+  padding: 5px 12px;
+
+  border: none;
+
+  border-radius: 6px;
+
+  cursor: pointer;
+
+}
+
+
+
+.modal-actions button:first-child {
+
+  background: #e5e7eb;
+
+  color: #111;
+
+}
+
+
+
+.modal-actions button:last-child {
+
+  background: #2563eb;
+
+  color: white;
+
+}
+
+
+
+/* Loading */
+
+.loading-indicator {
+
+  align-self: center;
+
+  font-size: 0.85rem;
+
+  color: #555;
+
+  font-style: italic;
+
+}
+
+
+
+/* Typing indicator inside bot bubble */
 
 .typing {
+
   display: inline-flex;
+
   gap: 6px;
+
   padding: 8px 12px;
+
   align-items: center;
+
 }
+
+
 
 /* Animated bouncing dots */
+
 .dot {
+
   width: 6px;
+
   height: 6px;
+
   background: #555;
+
   border-radius: 50%;
+
   display: inline-block;
+
   animation: chat-bounce 1.2s infinite ease-in-out;
+
 }
-.dot:nth-child(2) { animation-delay: 0.15s; }
-.dot:nth-child(3) { animation-delay: 0.3s; }
+
+.dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+
 
 @keyframes chat-bounce {
-  0%, 80%, 100% { transform: translateY(0); opacity: 0.35; }
-  40% { transform: translateY(-4px); opacity: 1; }
+
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+
+  40% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+
 }

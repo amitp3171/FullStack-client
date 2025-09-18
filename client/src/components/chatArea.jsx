@@ -1,3 +1,4 @@
+// frontend/src/components/ChatArea.jsx
 import React, { useState } from "react";
 import "../styles/ChatArea.css";
 
@@ -153,7 +154,19 @@ const ChatArea = ({ messages, onRunQuery, onConfirmEdit, isLoading }) => {
           </div>
         );
       })}
+            )}
+          </div>
+        );
+      })}
 
+      {/* Typing indicator */}
+      {isLoading && (
+        <div className="chat-bubble bot-bubble typing">
+          <span className="dot" />
+          <span className="dot" />
+          <span className="dot" />
+        </div>
+      )}
       {/* Typing indicator */}
       {isLoading && (
         <div className="chat-bubble bot-bubble typing">

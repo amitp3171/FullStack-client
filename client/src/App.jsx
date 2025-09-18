@@ -1,8 +1,7 @@
-// frontend/src/App.jsx
 import React, { useState, useEffect } from "react";
 import Navbar from "./components/Navbar.jsx";
 import SuggestionCards from "./components/SuggestionCards.jsx";
-import ChatArea from "./components/chatArea.jsx";
+import ChatArea from "./components/ChatArea.jsx";
 import InputBar from "./components/InputBar.jsx";
 import SideMenu from "./components/SideMenu.jsx";
 import "./styles/App.css";
@@ -16,22 +15,24 @@ const App = () => {
   const [threadId, setThreadId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [uploadHistory, setUploadHistory] = useState(() => {
-    try {
-      const raw = localStorage.getItem("uploadHistory");
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
+  // Fetch upload history from backend
+  const [uploadHistory, setUploadHistory] = useState([]);
+
+  // Load upload history from backend on component mount
+  useEffect(() => {
+    async function loadUploadHistory() {
+      try {
+        const res = await fetch(`${API_BASE}/history/uploads`);
+        if (res.ok) {
+          const data = await res.json();
+          setUploadHistory(data);
+        }
+      } catch (error) {
+        console.error("Failed to load upload history:", error);
+      }
     }
-  });
-  const saveHistory = (arr) => {
-    setUploadHistory(arr);
-    try {
-      localStorage.setItem("uploadHistory", JSON.stringify(arr));
-    } catch {
-      // Ignore write errors
-    }
-  };
+    loadUploadHistory();
+  }, []);
 
   const appendBot = (text) =>
     setMessages((prev) => [...prev, { sender: "bot", text }]);
@@ -71,20 +72,26 @@ const App = () => {
         formData.append("file", file);
         if (text?.trim()) formData.append("prompt", text);
         if (threadId) formData.append("threadId", threadId);
+        // Upload file
         response = await fetch(`${API_BASE}/upload`, {
           method: "POST",
           body: formData,
         });
       } else {
+        // FIXED: Ensure we're sending the threadId for text messages too
         response = await fetch(`${API_BASE}/chat/flow`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ threadId, message: text }),
+          body: JSON.stringify({
+            threadId, // This is crucial - it maintains the context
+            message: text,
+          }),
         });
       }
 
       const result = await response.json();
 
+      if (result.openai) appendBot(result.openai);
       if (result.threadId && result.threadId !== threadId) {
         setThreadId(result.threadId);
       }
@@ -110,6 +117,7 @@ const App = () => {
       }
 
       // Save successful uploads to history
+      // Refresh upload history after successful upload
       if (file && response.ok) {
         const newItem = {
           id: result.fileId || String(Date.now()),
@@ -119,6 +127,15 @@ const App = () => {
           threadId: result.threadId ?? null,
         };
         saveHistory([newItem, ...uploadHistory].slice(0, 20));
+        try {
+          const res = await fetch(`${API_BASE}/history/uploads`);
+          if (res.ok) {
+            const data = await res.json();
+            setUploadHistory(data);
+          }
+        } catch (error) {
+          console.error("Failed to refresh upload history:", error);
+        }
       }
     } catch (error) {
       console.error("Chat error:", error);
@@ -134,6 +151,7 @@ const App = () => {
     }
   };
 
+  // ... rest of your code remains the same ...
   // Run SQL query (normal or edited)
   const handleRunQuery = async (sql, edited = false) => {
     try {
@@ -185,6 +203,16 @@ const App = () => {
     if (item.threadId) {
       setThreadId(item.threadId);
       appendBot(`Loaded context from **${item.name}**.`);
+
+      // Optionally download and process the file if needed
+      try {
+        const response = await fetch(`${API_BASE}/history/download/${item.id}`);
+        if (response.ok) {
+          console.log("File downloaded from history:", item.name);
+        }
+      } catch (error) {
+        console.error("Failed to download file:", error);
+      }
     } else {
       appendBot(`Selected **${item.name}** from history.`);
     }
@@ -194,13 +222,7 @@ const App = () => {
     <div className="app-container">
       <Navbar onMenuToggle={() => setMenuOpen(!menuOpen)} />
 
-      {menuOpen && (
-        <div
-          className={`side-overlay ${menuOpen ? "show" : ""}`}
-          onClick={() => setMenuOpen(false)}
-        />
-      )}
-
+      {/* Always render the sidebar */}
       <SideMenu open={menuOpen} onToggle={() => setMenuOpen(!menuOpen)} />
 
       <div className="main-section">
