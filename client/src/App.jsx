@@ -1,12 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import Navbar from './components/Navbar.jsx';
-import SuggestionCards from './components/SuggestionCards.jsx';
-import ChatArea from './components/ChatArea.jsx';
-import InputBar from './components/InputBar.jsx';
-import SideMenu from './components/SideMenu.jsx';
-import './styles/App.css';
+import React, { useState, useEffect } from "react";
+import Navbar from "./components/Navbar.jsx";
+import SuggestionCards from "./components/SuggestionCards.jsx";
+import ChatArea from "./components/chatArea.jsx";
+import InputBar from "./components/inputBar.jsx";
+import SideMenu from "./components/SideMenu.jsx";
+import "./styles/App.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
+
+// Try to pull SQL out of a model response
+const extractSql = (s = "") => {
+  if (!s) return "";
+  // Prefer fenced ```sql blocks
+  const fenced = s.match(/```sql([\s\S]*?)```/i);
+  if (fenced) return fenced[1].trim();
+
+  // Fallback: first SQL-ish keyword onward
+  const noFence = s.replace(/```/g, "").trim();
+  const i = noFence
+    .toLowerCase()
+    .search(/\b(select|with|insert|update|delete)\b/);
+  return i >= 0 ? noFence.slice(i).trim() : "";
+};
 
 const App = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -73,47 +88,90 @@ const App = () => {
         formData.append("file", file);
         if (text?.trim()) formData.append("prompt", text);
         if (threadId) formData.append("threadId", threadId);
-                // Upload file
+        
         response = await fetch(`${API_BASE}/upload`, {
           method: "POST",
           body: formData,
         });
  // Send text message       
       } else {
-        // FIXED: Ensure we're sending the threadId for text messages too
         response = await fetch(`${API_BASE}/chat/flow`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            threadId, // This is crucial - it maintains the context
-            message: text 
-          }),
+          body: JSON.stringify({ threadId, message: text }),
         });
       }
 
       const result = await response.json();
+      if (result.threadId && result.threadId !== threadId)
+        setThreadId(result.threadId);
 
-      if (result.openai) appendBot(result.openai);
-      if (result.threadId) setThreadId(result.threadId);
+      // ---- A) Download reply (keep as-is) ----
+      if (result.download) {
+        const href = new URL(result.download.url, API_BASE).href; // normalize to absolute
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "bot",
+            download: { url: href, filename: result.download.filename },
+          },
+        ]);
+      } else {
+        // ---- B) Auto-run if reply looks like SQL ----
+        const openaiText = result.openai || result.aiText || "";
+        const sql = extractSql(openaiText);
 
-      // Clear the selected file after sending
-      if (file) setSelectedFile(null);
+        if (sql) {
+          // Immediately run the SQL and show table
+          const runRes = await fetch(`${API_BASE}/query/run`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: sql }),
+          });
+          const runJson = await runRes.json();
 
-      // Save successful uploads to history
-      if (file && response.ok) {
-        try {
-          const res = await fetch(`${API_BASE}/history/uploads`);
-          if (res.ok) {
-            const data = await res.json();
-            setUploadHistory(data);
+          if (Array.isArray(runJson.rows)) {
+            setMessages((prev) => [
+              ...prev,
+              { sender: "bot", rows: runJson.rows },
+            ]);
+          } else if (runJson.error) {
+            setMessages((prev) => [
+              ...prev,
+              { sender: "bot", text: `Error running query: ${runJson.error}` },
+            ]);
+          } else {
+            setMessages((prev) => [
+              ...prev,
+              { sender: "bot", text: "No rows returned." },
+            ]);
           }
-        } catch (error) {
-          console.error("Failed to refresh upload history:", error);
+        } else if (openaiText) {
+          // Not SQL → show normal assistant message
+          setMessages((prev) => [...prev, { sender: "bot", text: openaiText }]);
         }
+      }
+
+      // Upload history (unchanged)
+      if (file && response.ok) {
+        const newItem = {
+          id: result.fileId || String(Date.now()),
+          name: file.name,
+          size: file.size,
+          updatedAt: new Date().toISOString(),
+          threadId: result.threadId ?? null,
+        };
+        saveHistory([newItem, ...uploadHistory].slice(0, 20));
       }
     } catch (error) {
       console.error("Chat error:", error);
-      appendBot(`Error: Could not get response. (${error.message})`);
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "bot",
+          text: `Error: Could not get response. (${error.message})`,
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -172,7 +230,7 @@ const App = () => {
     if (!item.id) {
       console.error("History item has no ID to download.", item);
       appendBot("Error: Cannot use this history item as it has no ID.");
-      return;
+return;
     }
 
     try {
