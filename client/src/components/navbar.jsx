@@ -1,4 +1,4 @@
-
+//frontend/src/components/navbar.jsx
 import React from 'react';
 import '../styles/NavBar.css';
 // ...existing code...

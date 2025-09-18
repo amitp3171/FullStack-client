@@ -24,6 +24,21 @@ const App = () => {
   const [chatList, setChatList] = useState([]);
   const [showChatHistory, setShowChatHistory] = useState(false);
 
+  // --- Restore threadId from localStorage on load ---
+  useEffect(() => {
+    const savedThread = localStorage.getItem("activeThreadId");
+    if (savedThread) {
+      setThreadId(savedThread);
+    }
+  }, []);
+
+  // --- Persist threadId to localStorage when it changes ---
+  useEffect(() => {
+    if (threadId) {
+      localStorage.setItem("activeThreadId", threadId);
+    }
+  }, [threadId]);
+
   // Load upload history on mount
   useEffect(() => {
     async function loadUploadHistory() {
@@ -63,7 +78,7 @@ const App = () => {
     loadMessages();
   }, [threadId]);
 
-  // Load chat list (for history)
+  // Load chat list (for history modal)
   const loadChatList = async () => {
     try {
       const res = await fetch(`${API_BASE}/chats`);
@@ -233,7 +248,7 @@ const App = () => {
       />
 
       <div className="main-section">
-        {!hasUserInteracted && (
+        {!hasUserInteracted && !threadId && (
           <div className="suggestion-overlay">
             <SuggestionCards
               onSuggestionClick={(text) => handleSendMessage(text, null)}
