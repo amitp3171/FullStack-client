@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "./components/Navbar.jsx";
 import SuggestionCards from "./components/SuggestionCards.jsx";
-import ChatArea from "./components/ChatArea.jsx";
-import InputBar from "./components/InputBar.jsx";
+import ChatArea from "./components/chatArea.jsx";
+import InputBar from "./components/inputBar.jsx";
 import SideMenu from "./components/SideMenu.jsx";
 import "./styles/App.css";
 

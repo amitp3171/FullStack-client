@@ -18,7 +18,7 @@ const isSqlQuery = (text) => {
   );
 };
 
-const ChatArea = ({ messages, onRunQuery, onConfirmEdit, isLoading }) => {
+const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editValue, setEditValue] = useState("");
 
@@ -47,7 +47,7 @@ const ChatArea = ({ messages, onRunQuery, onConfirmEdit, isLoading }) => {
             {/* === Bot message === */}
             {isBot && (
               <div>
-                {/* If there's a downloadable file, show inline link & skip extra text */}
+                {/* Inline download link, if present */}
                 {msg.download ? (
                   <div className="download-inline">
                     Your file is ready,{" "}
@@ -62,7 +62,7 @@ const ChatArea = ({ messages, onRunQuery, onConfirmEdit, isLoading }) => {
                   </div>
                 ) : (
                   <>
-                    {/* SQL view (read-only) */}
+                    {/* SQL (read-only) */}
                     {sqlLike && editingIndex !== i && (
                       <>
                         <div>{cleanedSql}</div>
@@ -145,7 +145,7 @@ const ChatArea = ({ messages, onRunQuery, onConfirmEdit, isLoading }) => {
                   </div>
                 )}
 
-                {/* No results */}
+                {/* No results (explicit empty array) */}
                 {Array.isArray(msg.rows) && msg.rows.length === 0 && (
                   <div className="sql-result">No results returned.</div>
                 )}
@@ -154,20 +154,8 @@ const ChatArea = ({ messages, onRunQuery, onConfirmEdit, isLoading }) => {
           </div>
         );
       })}
-            )}
-          </div>
-        );
-      })}
 
-      {/* Typing indicator */}
-      {isLoading && (
-        <div className="chat-bubble bot-bubble typing">
-          <span className="dot" />
-          <span className="dot" />
-          <span className="dot" />
-        </div>
-      )}
-      {/* Typing indicator */}
+      {/* Typing indicator (single) */}
       {isLoading && (
         <div className="chat-bubble bot-bubble typing">
           <span className="dot" />
