@@ -15,7 +15,7 @@ const App = () => {
   const [threadId, setThreadId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch upload history from backend
+  // Changed: Fetch upload history from backend instead of localStorage
   const [uploadHistory, setUploadHistory] = useState([]);
 
   // Load upload history from backend on component mount
@@ -72,11 +72,12 @@ const App = () => {
         formData.append("file", file);
         if (text?.trim()) formData.append("prompt", text);
         if (threadId) formData.append("threadId", threadId);
-        // Upload file
+                // Upload file
         response = await fetch(`${API_BASE}/upload`, {
           method: "POST",
           body: formData,
         });
+        // Send text message       
       } else {
         // FIXED: Ensure we're sending the threadId for text messages too
         response = await fetch(`${API_BASE}/chat/flow`, {
@@ -93,6 +94,9 @@ const App = () => {
 
       if (result.openai) appendBot(result.openai);
       if (result.threadId) setThreadId(result.threadId);
+
+      // Removed: localStorage history saving since it's now handled by backend
+      // Files are automatically saved to history via the database
 
       // Refresh upload history after successful upload
       if (file && response.ok) {
@@ -172,6 +176,7 @@ const App = () => {
         const response = await fetch(`${API_BASE}/history/download/${item.id}`);
         if (response.ok) {
           console.log("File downloaded from history:", item.name);
+          // You can process the file here if needed for the context
         }
       } catch (error) {
         console.error("Failed to download file:", error);
