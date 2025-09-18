@@ -1,8 +1,8 @@
-// src/components/SideMenu.jsx
+// frontend/src/components/SideMenu.jsx
 import React from 'react';
 import '../styles/SideMenu.css'
 
-export default function SideMenu({ open, onToggle }) {
+export default function SideMenu({ open, onToggle, onOpenHistory }) {
   return (
     <aside className={`side-menu ${open ? 'open' : ''}`}>
       <button
@@ -16,11 +16,9 @@ export default function SideMenu({ open, onToggle }) {
 
       <ul>
         <li>Settings</li>
-        <li>History</li>
+        <li onClick={onOpenHistory} style={{ cursor: "pointer" }}>History</li>
         <li>Logout</li>
       </ul>
     </aside>
   );
 }
-
-

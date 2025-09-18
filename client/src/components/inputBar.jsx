@@ -1,3 +1,4 @@
+//frontend/src/components/inputBar.jsx
 import React, { useState, useRef, useEffect } from "react";
 import "../styles/InputBar.css";
 

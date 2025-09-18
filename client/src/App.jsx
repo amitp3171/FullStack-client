@@ -1,3 +1,4 @@
+// frontend/src/App.jsx
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar.jsx';
 import SuggestionCards from './components/SuggestionCards.jsx';
@@ -14,12 +15,16 @@ const App = () => {
   const [messages, setMessages] = useState([]);
   const [threadId, setThreadId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null); // Moved from InputBar
+  const [selectedFile, setSelectedFile] = useState(null);
 
-  // Changed: Fetch upload history from backend instead of localStorage
+  // Upload history
   const [uploadHistory, setUploadHistory] = useState([]);
 
-  // Load upload history from backend on component mount
+  // Chat history
+  const [chatList, setChatList] = useState([]);
+  const [showChatHistory, setShowChatHistory] = useState(false);
+
+  // Load upload history on mount
   useEffect(() => {
     async function loadUploadHistory() {
       try {
@@ -35,13 +40,13 @@ const App = () => {
     loadUploadHistory();
   }, []);
 
+  // Append user/bot
   const appendBot = (text) =>
     setMessages((prev) => [...prev, { sender: "bot", text }]);
-
   const appendUser = (text) =>
     setMessages((prev) => [...prev, { sender: "user", text }]);
 
-  // Load messages from backend when threadId changes
+  // Load messages when threadId changes
   useEffect(() => {
     if (!threadId) return;
     async function loadMessages() {
@@ -58,7 +63,20 @@ const App = () => {
     loadMessages();
   }, [threadId]);
 
-  // Handle sending user messages or file uploads
+  // Load chat list (for history)
+  const loadChatList = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/chats`);
+      if (res.ok) {
+        const data = await res.json();
+        setChatList(data);
+      }
+    } catch (err) {
+      console.error("Failed to load chats:", err);
+    }
+  };
+
+  // Handle sending messages or uploads
   const handleSendMessage = async (text, file) => {
     if (!text?.trim() && !file) return;
     if (text?.trim()) appendUser(text);
@@ -73,20 +91,18 @@ const App = () => {
         formData.append("file", file);
         if (text?.trim()) formData.append("prompt", text);
         if (threadId) formData.append("threadId", threadId);
-                // Upload file
+
         response = await fetch(`${API_BASE}/upload`, {
           method: "POST",
           body: formData,
         });
- // Send text message       
       } else {
-        // FIXED: Ensure we're sending the threadId for text messages too
         response = await fetch(`${API_BASE}/chat/flow`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            threadId, // This is crucial - it maintains the context
-            message: text 
+          body: JSON.stringify({
+            threadId,
+            message: text,
           }),
         });
       }
@@ -96,10 +112,9 @@ const App = () => {
       if (result.openai) appendBot(result.openai);
       if (result.threadId) setThreadId(result.threadId);
 
-      // Clear the selected file after sending
       if (file) setSelectedFile(null);
 
-      // Save successful uploads to history
+      // Refresh upload history after upload
       if (file && response.ok) {
         try {
           const res = await fetch(`${API_BASE}/history/uploads`);
@@ -119,8 +134,7 @@ const App = () => {
     }
   };
 
-  // ... rest of your code remains the same ...
-  // Run SQL query (normal or edited)
+  // Run query
   const handleRunQuery = async (sql, edited = false) => {
     try {
       setIsLoading(true);
@@ -145,14 +159,12 @@ const App = () => {
 
   // Confirm SQL edit
   const handleConfirmEdit = (editedQuery, index) => {
-    // 1. Update bot bubble
     setMessages((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], text: editedQuery, edited: true };
       return updated;
     });
 
-    // edit the "text" field of the bot message at "index" in the database
     const updateMessageInDB = async () => {
       try {
         await fetch(`${API_BASE}/messages/${messages[index]._id}`, {
@@ -167,8 +179,8 @@ const App = () => {
     updateMessageInDB();
   };
 
+  // Select file from history
   const handleSelectHistory = async (item) => {
-    // When a history item is selected, fetch it and set it as the selected file.
     if (!item.id) {
       console.error("History item has no ID to download.", item);
       appendBot("Error: Cannot use this history item as it has no ID.");
@@ -184,10 +196,7 @@ const App = () => {
 
       const blob = await response.blob();
       const file = new File([blob], item.name, { type: item.mimeType });
-
-      // Set the fetched file as the currently selected file
       setSelectedFile(file);
-
     } catch (error) {
       console.error("Failed to use file from history:", error);
       appendBot(`Error using file from history: ${error.message}`);
@@ -196,12 +205,32 @@ const App = () => {
     }
   };
 
+  // Open chat from chat history
+  const handleOpenChat = async (chat) => {
+    try {
+      const res = await fetch(`${API_BASE}/messages/${chat.threadId}`);
+      if (res.ok) {
+        const msgs = await res.json();
+        setMessages(msgs);
+        setThreadId(chat.threadId);
+        setShowChatHistory(false);
+      }
+    } catch (err) {
+      console.error("Failed to load chat:", err);
+    }
+  };
+
   return (
     <div className="app-container">
       <Navbar onMenuToggle={() => setMenuOpen(!menuOpen)} />
-
-      {/* Always render the sidebar */}
-      <SideMenu open={menuOpen} onToggle={() => setMenuOpen(!menuOpen)} />
+      <SideMenu
+        open={menuOpen}
+        onToggle={() => setMenuOpen(!menuOpen)}
+        onOpenHistory={() => {
+          loadChatList();
+          setShowChatHistory(true);
+        }}
+      />
 
       <div className="main-section">
         {!hasUserInteracted && (
@@ -228,6 +257,37 @@ const App = () => {
         selectedFile={selectedFile}
         onFileSelect={setSelectedFile}
       />
+
+      {/* Chat history modal */}
+      {showChatHistory && (
+        <div className="modal-overlay" onClick={() => setShowChatHistory(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Past Chats</h3>
+              <button className="icon-btn" onClick={() => setShowChatHistory(false)}>✕</button>
+            </div>
+            {chatList.length === 0 ? (
+              <p className="muted">No chats yet.</p>
+            ) : (
+              <ul className="history-list">
+                {chatList.map((chat) => (
+                  <li key={chat._id} className="history-row">
+                    <div className="history-meta">
+                      <div className="history-name">{chat.title || "Untitled Chat"}</div>
+                      <div className="history-sub">
+                        {new Date(chat.updatedAt).toLocaleString()}
+                      </div>
+                    </div>
+                    <button className="btn btn-small" onClick={() => handleOpenChat(chat)}>
+                      Open
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
