@@ -161,7 +161,7 @@ const App = () => {
           updatedAt: new Date().toISOString(),
           threadId: result.threadId ?? null,
         };
-        saveHistory([newItem, ...uploadHistory].slice(0, 20));
+        setUploadHistory((prev) => [newItem, ...prev].slice(0, 20));}
       }
     } catch (error) {
       console.error("Chat error:", error);
