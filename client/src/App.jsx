@@ -162,7 +162,6 @@ const App = () => {
           threadId: result.threadId ?? null,
         };
         setUploadHistory((prev) => [newItem, ...prev].slice(0, 20));}
-      }
     } catch (error) {
       console.error("Chat error:", error);
       setMessages((prev) => [
