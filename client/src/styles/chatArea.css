@@ -1,3 +1,4 @@
+/* ===== Chat Area ===== */
 .chat-area {
   position: relative;
   width: 85%;
@@ -7,36 +8,43 @@
   border-radius: 16px;
   background: transparent;
   overflow-y: auto;
+
+  /* unified layout from both branches */
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-right: 0px;
-  align-items: center;
-  justify-content: center;
+  gap: 12px;                /* (was 10/12) choose 12 for a bit more room */
+  align-items: stretch;     /* let bubbles align left/right naturally */
+  justify-content: flex-start;
 }
 
-.message {
-  max-width: 60%;
-  padding: 10px 15px;
-  border-radius: 12px;
+/* ===== Chat bubbles ===== */
+.chat-bubble {
+  max-width: 70%;           /* (was 60/70) choose 70 for better readability */
+  padding: 10px 14px;
+  border-radius: 14px;
+  line-height: 1.4;
+  word-wrap: break-word;
   font-size: 0.95rem;
 }
 
 .user-bubble {
   align-self: flex-end;
-  background: #2563eb; /* blue-600 */
-  color: white;
+  background: #2563eb;      /* blue-600 */
+  color: #fff;
   border-bottom-right-radius: 4px;
 }
 
 .bot-bubble {
   align-self: flex-start;
-  background: #e5e7eb; /* gray-200 */
+  background: #e5e7eb;      /* gray-200 */
   color: #111;
   border-bottom-left-radius: 4px;
 }
 
-/* Edited label */
+/* Preserve line breaks for normal text blocks */
+.message-text { white-space: pre-wrap; }
+
+/* Edited label under SQL message */
 .edited-label {
   font-size: 0.75rem;
   color: #555;
@@ -44,73 +52,38 @@
   font-style: italic;
 }
 
-/* results table inside bot messages */
-.results-table {
-  margin-top: 8px;
-  overflow-x: auto;
-}
-
-.sql-result table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.sql-result th,
-.sql-result td {
-  border: 1px solid #ddd;
-  padding: 6px 10px;
-  text-align: left;
-}
-
-.sql-result th {
-  background: #f3f4f6; /* light gray */
-  font-weight: 600;
-}
-
-.sql-result tr:nth-child(even) {
-  background: #f9fafb;
-}
-
-/* run button styling */
-.run-query-btn {
+/* ===== SQL actions (Run / Edit) ===== */
+.query-actions {
+  display: flex;
+  gap: 8px;
   margin-top: 6px;
 }
 
-.run-query-btn {
+.run-query-btn,
+.edit-query-btn {
   padding: 4px 10px;
   font-size: 0.85rem;
-  background: #2563eb;
-  color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.2s ease;
 }
 
+.run-query-btn {
+  background: #2563eb; color: #fff;
+}
 .run-query-btn:hover {
   background: #1d4ed8;
 }
 
 .edit-query-btn {
-  padding: 4px 10px;
-  font-size: 0.85rem;
-  background: #f59e0b; /* amber */
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s ease;
+  background: #f59e0b; color: #fff;   /* amber */
 }
-
 .edit-query-btn:hover {
   background: #d97706;
 }
 
-/* Inline SQL editor */
+/* ===== Inline SQL editor ===== */
 .sql-editor {
   width: 100%;
   font-family: monospace;
@@ -128,25 +101,64 @@
   gap: 10px;
   margin-top: 8px;
 }
-
 .modal-actions button {
   padding: 5px 12px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
 }
-
 .modal-actions button:first-child {
-  background: #e5e7eb;
-  color: #111;
+  background: #e5e7eb; color: #111;
 }
-
 .modal-actions button:last-child {
-  background: #2563eb;
-  color: white;
+  background: #2563eb; color: #fff;
 }
 
-/* Loading */
+/* ===== SQL result table ===== */
+.sql-result {
+  margin-top: 8px;
+  overflow-x: auto;
+}
+
+.sql-result table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.sql-result th,
+.sql-result td {
+  border: 1px solid #ddd;
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.sql-result th {
+  background: #f3f4f6;      /* light gray */
+  font-weight: 600;
+}
+
+.sql-result tr:nth-child(even) {
+  background: #f9fafb;
+}
+
+/* ===== Inline download line + link ===== */
+.download-inline {
+  margin-top: 4px;
+  font-size: 0.95rem;
+  color: #222;
+}
+.file-link {
+  color: #0b5fff;
+  text-decoration: underline;
+  font-weight: 600;
+}
+.file-link:hover { text-decoration: none; }
+
+/* ===== Loading & typing indicator ===== */
 .loading-indicator {
   align-self: center;
   font-size: 0.85rem;
@@ -154,7 +166,6 @@
   font-style: italic;
 }
 
-/* Typing indicator inside bot bubble */
 .typing {
   display: inline-flex;
   gap: 6px;
@@ -177,24 +188,4 @@
 @keyframes chat-bounce {
   0%, 80%, 100% { transform: translateY(0); opacity: 0.35; }
   40% { transform: translateY(-4px); opacity: 1; }
-}
-
-/* Preserve line breaks in messages */
-.message-text { white-space: pre-wrap; }
-
-/* Inline download line + link */
-.download-inline {
-  margin-top: 4px;
-  font-size: 0.95rem;
-  color: #222;
-}
-
-.file-link {
-  color: #0b5fff;
-  text-decoration: underline;
-  font-weight: 600;
-}
-
-.file-link:hover {
-  text-decoration: none;
 }

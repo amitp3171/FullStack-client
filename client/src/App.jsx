@@ -71,12 +71,10 @@ const App = () => {
         formData.append("file", file);
         if (text?.trim()) formData.append("prompt", text);
         if (threadId) formData.append("threadId", threadId);
-// Upload file
         response = await fetch(`${API_BASE}/upload`, {
           method: "POST",
           body: formData,
         });
- // Send text message       
       } else {
         response = await fetch(`${API_BASE}/chat/flow`, {
           method: "POST",
@@ -87,67 +85,50 @@ const App = () => {
 
       const result = await response.json();
 
-      if (result.threadId) setThreadId(result.threadId);
-
-      // If backend returned a downloadable file, push a message that includes it
-      if (result.download) {
-        // Build an absolute URL so it hits the API host/port, not the UI host/port
-        const apiOrigin = new URL(API_BASE).origin; // e.g. "http://localhost:3000"
-        const href = result.download.url.startsWith("http")
-          ? result.download.url
-          : `${apiOrigin}${result.download.url}`; // "/api/db/download/ID"
-        setMessages((prev) => [
-          ...prev,
-          {
-            sender: "bot",
-            text: result.openai || "Your file is ready.",
-            download: {
-              url: href, // <-- absolute URL from server
-              filename: result.download.filename,
-            },
-          },
-        ]);
-      } else if (result.openai) {
-        appendBot(result.openai);
+      if (result.threadId && result.threadId !== threadId) {
+        setThreadId(result.threadId);
       }
 
-      // If backend returned a downloadable file, push a message that includes it
+      // Append EXACTLY ONE bot message
       if (result.download) {
-        // Build an absolute URL so it hits the API host/port, not the UI host/port
-        const apiOrigin = new URL(API_BASE).origin; // e.g. "http://localhost:3000"
-        const href = result.download.url.startsWith("http")
-          ? result.download.url
-          : `${apiOrigin}${result.download.url}`; // "/api/db/download/ID"
+        // Make sure the link is absolute (works even if server returned a relative path)
+        const href = new URL(result.download.url, API_BASE).href;
+
         setMessages((prev) => [
           ...prev,
           {
             sender: "bot",
-            text: result.openai || "Your file is ready.",
-            download: {
-              url: href, // <-- absolute URL from server
-              filename: result.download.filename,
-            },
+            // ChatArea shows the inline link when `download` exists, so text is optional
+            download: { url: href, filename: result.download.filename },
           },
         ]);
       } else if (result.openai) {
-        appendBot(result.openai);
+        setMessages((prev) => [
+          ...prev,
+          { sender: "bot", text: result.openai },
+        ]);
       }
 
       // Save successful uploads to history
-      
       if (file && response.ok) {
         const newItem = {
-          id: result.fileId || `${Date.now()}`,
+          id: result.fileId || String(Date.now()),
           name: file.name,
           size: file.size,
           updatedAt: new Date().toISOString(),
-          threadId: result.threadId || null,
+          threadId: result.threadId ?? null,
         };
         saveHistory([newItem, ...uploadHistory].slice(0, 20));
       }
     } catch (error) {
       console.error("Chat error:", error);
-      appendBot(`Error: Could not get response. (${error.message})`);
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "bot",
+          text: `Error: Could not get response. (${error.message})`,
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
