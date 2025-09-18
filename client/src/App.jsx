@@ -8,6 +8,21 @@ import "./styles/App.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
+// Try to pull SQL out of a model response
+const extractSql = (s = "") => {
+  if (!s) return "";
+  // Prefer fenced ```sql blocks
+  const fenced = s.match(/```sql([\s\S]*?)```/i);
+  if (fenced) return fenced[1].trim();
+
+  // Fallback: first SQL-ish keyword onward
+  const noFence = s.replace(/```/g, "").trim();
+  const i = noFence
+    .toLowerCase()
+    .search(/\b(select|with|insert|update|delete)\b/);
+  return i >= 0 ? noFence.slice(i).trim() : "";
+};
+
 const App = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
@@ -72,52 +87,70 @@ const App = () => {
         formData.append("file", file);
         if (text?.trim()) formData.append("prompt", text);
         if (threadId) formData.append("threadId", threadId);
-        // Upload file
+
         response = await fetch(`${API_BASE}/upload`, {
           method: "POST",
           body: formData,
         });
       } else {
-        // FIXED: Ensure we're sending the threadId for text messages too
         response = await fetch(`${API_BASE}/chat/flow`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            threadId, // This is crucial - it maintains the context
-            message: text,
-          }),
+          body: JSON.stringify({ threadId, message: text }),
         });
       }
 
       const result = await response.json();
-
-      if (result.openai) appendBot(result.openai);
-      if (result.threadId && result.threadId !== threadId) {
+      if (result.threadId && result.threadId !== threadId)
         setThreadId(result.threadId);
-      }
 
-      // Append EXACTLY ONE bot message
+      // ---- A) Download reply (keep as-is) ----
       if (result.download) {
-        // Make sure the link is absolute (works even if server returned a relative path)
-        const href = new URL(result.download.url, API_BASE).href;
-
+        const href = new URL(result.download.url, API_BASE).href; // normalize to absolute
         setMessages((prev) => [
           ...prev,
           {
             sender: "bot",
-            // ChatArea shows the inline link when `download` exists, so text is optional
             download: { url: href, filename: result.download.filename },
           },
         ]);
-      } else if (result.openai) {
-        setMessages((prev) => [
-          ...prev,
-          { sender: "bot", text: result.openai },
-        ]);
+      } else {
+        // ---- B) Auto-run if reply looks like SQL ----
+        const openaiText = result.openai || result.aiText || "";
+        const sql = extractSql(openaiText);
+
+        if (sql) {
+          // Immediately run the SQL and show table
+          const runRes = await fetch(`${API_BASE}/query/run`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: sql }),
+          });
+          const runJson = await runRes.json();
+
+          if (Array.isArray(runJson.rows)) {
+            setMessages((prev) => [
+              ...prev,
+              { sender: "bot", rows: runJson.rows },
+            ]);
+          } else if (runJson.error) {
+            setMessages((prev) => [
+              ...prev,
+              { sender: "bot", text: `Error running query: ${runJson.error}` },
+            ]);
+          } else {
+            setMessages((prev) => [
+              ...prev,
+              { sender: "bot", text: "No rows returned." },
+            ]);
+          }
+        } else if (openaiText) {
+          // Not SQL → show normal assistant message
+          setMessages((prev) => [...prev, { sender: "bot", text: openaiText }]);
+        }
       }
 
-      // Save successful uploads to history
-      // Refresh upload history after successful upload
+      // Upload history (unchanged)
       if (file && response.ok) {
         const newItem = {
           id: result.fileId || String(Date.now()),
@@ -127,15 +160,6 @@ const App = () => {
           threadId: result.threadId ?? null,
         };
         saveHistory([newItem, ...uploadHistory].slice(0, 20));
-        try {
-          const res = await fetch(`${API_BASE}/history/uploads`);
-          if (res.ok) {
-            const data = await res.json();
-            setUploadHistory(data);
-          }
-        } catch (error) {
-          console.error("Failed to refresh upload history:", error);
-        }
       }
     } catch (error) {
       console.error("Chat error:", error);
