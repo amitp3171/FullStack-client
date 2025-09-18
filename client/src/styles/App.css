@@ -14,9 +14,9 @@
 .main-section {
   flex: 1;
   align-items: center;
-  position:relative;
+  position: relative;
   overflow-y: auto;
-  display:flex;
+  display: flex;
   flex-direction: column;
 }
 
@@ -63,4 +63,3 @@
 .cancel-btn:hover {
   background: #888;
 }
-
