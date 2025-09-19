@@ -8,14 +8,19 @@ import "./styles/App.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
-// Try to pull SQL out of a model response
+const isQuestion = (s = "") => {
+  const t = s.trim().toLowerCase();
+  if (!t) return false;
+  if (t.endsWith("?")) return true;
+  return /^(what|how|where|when|which|who|show|list|give|return|find|count|display|get)\b/.test(
+    t
+  );
+};
+
 const extractSql = (s = "") => {
   if (!s) return "";
-  // Prefer fenced ```sql blocks
   const fenced = s.match(/```sql([\s\S]*?)```/i);
   if (fenced) return fenced[1].trim();
-
-  // Fallback: first SQL-ish keyword onward
   const noFence = s.replace(/```/g, "").trim();
   const i = noFence
     .toLowerCase()
@@ -72,94 +77,191 @@ const App = () => {
     loadMessages();
   }, [threadId]);
 
-  // Handle sending user messages or file uploads
+  // inside App component
   const handleSendMessage = async (text, file) => {
     if (!text?.trim() && !file) return;
     if (text?.trim()) appendUser(text);
     setHasUserInteracted(true);
 
+    // helpers
+    const stripSqlBlock = (s = "") =>
+      s.replace(/```sql[\s\S]*?```/gi, "").trim();
+    const looksLikeSchema =
+      typeof text === "string" &&
+      /Tables?:/i.test(text) &&
+      /-\s*\w+/.test(text);
+    const asksForDbFile =
+      typeof text === "string" &&
+      /\b(build|create|generate|make)\b.*\b(database|db|file)\b/i.test(text);
+
     try {
       setIsLoading(true);
-      let response;
 
+      // ---------- FILE UPLOAD (unchanged) ----------
       if (file) {
         const formData = new FormData();
         formData.append("file", file);
         if (text?.trim()) formData.append("prompt", text);
         if (threadId) formData.append("threadId", threadId);
 
-        response = await fetch(`${API_BASE}/upload`, {
+        const response = await fetch(`${API_BASE}/upload`, {
           method: "POST",
           body: formData,
         });
-      } else {
-        response = await fetch(`${API_BASE}/chat/flow`, {
+
+        const result = await response.json();
+        if (result.threadId) setThreadId(result.threadId);
+
+        if (result.download) {
+          const href = new URL(result.download.url, API_BASE).href;
+          setMessages((prev) => [
+            ...prev,
+            {
+              sender: "bot",
+              download: { url: href, filename: result.download.filename },
+            },
+          ]);
+        } else if (result.openai) {
+          setMessages((prev) => [
+            ...prev,
+            { sender: "bot", text: result.openai },
+          ]);
+        }
+
+        // refresh upload history (optional)
+        if (response.ok) {
+          try {
+            const res = await fetch(`${API_BASE}/history/uploads`);
+            if (res.ok) setUploadHistory(await res.json());
+          } catch {}
+        }
+        return;
+      }
+
+      // ---------- FAST-PATH: “build database file … Tables: …” ----------
+      if (asksForDbFile && looksLikeSchema) {
+        // let the backend generate SQL DDL + create a temp file and hand back /download/:id
+        const response = await fetch(`${API_BASE}/chat/flow`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ threadId, message: text }),
         });
+
+        const result = await response.json();
+        if (result.threadId) setThreadId(result.threadId);
+
+        if (result.download) {
+          const href = new URL(result.download.url, API_BASE).href;
+          setMessages((prev) => [
+            ...prev,
+            {
+              sender: "bot",
+              text: result.openai || "Your file is ready.",
+              download: { url: href, filename: result.download.filename },
+            },
+          ]);
+        } else if (result.openai || result.aiText) {
+          setMessages((prev) => [
+            ...prev,
+            { sender: "bot", text: result.openai || result.aiText },
+          ]);
+        }
+        return; // important: stop here so we don't run the classifier/sql flow
       }
 
-      const result = await response.json();
-      if (result.threadId && result.threadId !== threadId)
-        setThreadId(result.threadId);
+      // ---------- INTENT CLASSIFY → QUESTION vs SQL REQUEST ----------
+      // ask the classifier
+      let label = "other";
+      try {
+        const clsRes = await fetch(`${API_BASE}/nlp/classify-intent`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text }),
+        });
+        if (clsRes.ok) {
+          const cls = await clsRes.json();
+          label = cls.label; // "question" | "sql_request" | "other"
+        }
+      } catch {
+        label = "sql_request"; // fallback
+      }
 
-      // ---- A) Download reply (keep as-is) ----
-      if (result.download) {
-        const href = new URL(result.download.url, API_BASE).href; // normalize to absolute
-        setMessages((prev) => [
-          ...prev,
-          {
-            sender: "bot",
-            download: { url: href, filename: result.download.filename },
-          },
-        ]);
-      } else {
-        // ---- B) Auto-run if reply looks like SQL ----
-        const openaiText = result.openai || result.aiText || "";
-        const sql = extractSql(openaiText);
-
-        if (sql) {
-          // Immediately run the SQL and show table
-          const runRes = await fetch(`${API_BASE}/query/run`, {
+      if (label === "question") {
+        // Get a short explanation AND a clean SQL query
+        const [expRes, genRes] = await Promise.all([
+          fetch(`${API_BASE}/chat/flow`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: sql }),
-          });
-          const runJson = await runRes.json();
+            body: JSON.stringify({ threadId, message: text }),
+          }),
+          fetch(`${API_BASE}/sql/generate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question: text }),
+          }),
+        ]);
 
-          if (Array.isArray(runJson.rows)) {
-            setMessages((prev) => [
-              ...prev,
-              { sender: "bot", rows: runJson.rows },
-            ]);
-          } else if (runJson.error) {
-            setMessages((prev) => [
-              ...prev,
-              { sender: "bot", text: `Error running query: ${runJson.error}` },
-            ]);
-          } else {
-            setMessages((prev) => [
-              ...prev,
-              { sender: "bot", text: "No rows returned." },
-            ]);
-          }
-        } else if (openaiText) {
-          // Not SQL → show normal assistant message
-          setMessages((prev) => [...prev, { sender: "bot", text: openaiText }]);
+        let explanation = "";
+        try {
+          const expJson = await expRes.json();
+          if (expJson.threadId) setThreadId(expJson.threadId);
+          const raw = expJson.openai || expJson.aiText || "";
+          explanation =
+            stripSqlBlock(raw) || "Here’s a query that answers your question.";
+        } catch {}
+
+        let sql = "";
+        try {
+          const genJson = await genRes.json();
+          sql = (genJson.sql || "").trim();
+        } catch {}
+
+        if (explanation) {
+          setMessages((prev) => [
+            ...prev,
+            { sender: "bot", text: explanation },
+          ]);
         }
-      }
+        if (sql) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              sender: "bot",
+              text: "```sql\n" + sql + "\n```",
+              allowEdit: false,
+            }, // Run-only
+          ]);
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            { sender: "bot", text: "I couldn’t generate a query for that." },
+          ]);
+        }
+      } else {
+        // Not a question → generate SQL the user can Run + Edit
+        const genRes = await fetch(`${API_BASE}/sql/generate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: text }),
+        });
+        const genJson = await genRes.json();
+        const sql = (genJson.sql || "").trim();
 
-      // Upload history (unchanged)
-      if (file && response.ok) {
-        const newItem = {
-          id: result.fileId || String(Date.now()),
-          name: file.name,
-          size: file.size,
-          updatedAt: new Date().toISOString(),
-          threadId: result.threadId ?? null,
-        };
-        saveHistory([newItem, ...uploadHistory].slice(0, 20));
+        if (sql) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              sender: "bot",
+              text: "```sql\n" + sql + "\n```",
+              allowEdit: true,
+            },
+          ]);
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            { sender: "bot", text: "Sorry, I couldn’t generate SQL for that." },
+          ]);
+        }
       }
     } catch (error) {
       console.error("Chat error:", error);

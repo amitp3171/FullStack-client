@@ -1,383 +1,298 @@
 /* ===== Chat Area ===== */
+/* src/styles/ChatArea.css */
 .chat-area {
-
   position: relative;
-
   width: 85%;
-
-  min-height: 420px;
+  /* let it grow inside the flex parent and actually be allowed to shrink */
+  flex: 1 1 auto;
+  min-height: 0;             /* CRUCIAL in flex layouts so inner overflow works */
+  max-height: 100%;
 
   padding: 20px;
-
   margin: 24px auto;
-
   border-radius: 16px;
-
   background: transparent;
 
+  /* single scroll container lives here */
   overflow-y: auto;
 
   display: flex;
-
   flex-direction: column;
-
   gap: 10px;
 
-  margin-right: 0px;
-
-  align-items: center;
-
-  justify-content: center;
-
+  /* was centering, which traps space above */
+  align-items: stretch;       /* stretch bubble width within 70% max */
+  justify-content: flex-start;/* start at the top, not centered */
 }
-
-
-
 
 /* Chat bubbles */
-
 .chat-bubble {
-
   max-width: 70%;
-
   padding: 10px 14px;
-
   border-radius: 14px;
-
   line-height: 1.4;
-
   word-wrap: break-word;
-
   font-size: 0.95rem;
-
 }
-
-
 
 .user-bubble {
-
   align-self: flex-end;
-
-  background: #2563eb;
-  /* blue-600 */
-
+  background: #2563eb; /* blue-600 */
   color: white;
-
   border-bottom-right-radius: 4px;
-
 }
-
-
 
 .bot-bubble {
-
   align-self: flex-start;
-
-  background: #e5e7eb;
-  /* gray-200 */
-
+  background: #e5e7eb; /* gray-200 */
   color: #111;
-
   border-bottom-left-radius: 4px;
-
 }
-
-
 
 /* Edited label */
-
 .edited-label {
-
   font-size: 0.75rem;
-
   color: #555;
-
   margin-top: 4px;
-
   font-style: italic;
-
 }
-
-
 
 /* results table inside bot messages */
-
 .results-table {
-
   margin-top: 8px;
-
   overflow-x: auto;
-
 }
-
-
 
 .sql-result table {
-
   width: 100%;
-
   border-collapse: collapse;
-
   font-size: 0.9rem;
-
   background: white;
-
   border-radius: 8px;
-
   overflow: hidden;
-
 }
-
-
 
 .sql-result th,
-
 .sql-result td {
-
   border: 1px solid #ddd;
-
   padding: 6px 10px;
-
   text-align: left;
-
 }
-
-
 
 .sql-result th {
-
-  background: #f3f4f6;
-  /* light gray */
-
+  background: #f3f4f6; /* light gray */
   font-weight: 600;
-
 }
-
-
 
 .sql-result tr:nth-child(even) {
-
   background: #f9fafb;
-
 }
 
-
-
-/* run button styling */
-
-.run-query-btn {
-
+/* ---------- compact, neutral buttons ---------- */
+.query-actions {
+  display: inline-flex;
+  gap: 6px;
   margin-top: 6px;
-
 }
 
-
-
-.run-query-btn {
-
-  padding: 4px 10px;
-
-  font-size: 0.85rem;
-
-  background: #2563eb;
-
-  color: white;
-
-  border: none;
-
-  border-radius: 6px;
-
-  cursor: pointer;
-
-  transition: background 0.2s ease;
-
-}
-
-
-
-.run-query-btn:hover {
-
-  background: #1d4ed8;
-
-}
-
-
-
+/* both buttons share the same neutral style */
+.run-query-btn,
 .edit-query-btn {
-
-  padding: 4px 10px;
-
-  font-size: 0.85rem;
-
-  background: #f59e0b;
-  /* amber */
-
-  color: white;
-
-  border: none;
-
-  border-radius: 6px;
-
-  cursor: pointer;
-
-  transition: background 0.2s ease;
-
-}
-
-
-
-.edit-query-btn:hover {
-
-  background: #d97706;
-
-}
-
-
-
-/* Inline SQL editor */
-
-.sql-editor {
-
-  width: 100%;
-
-  font-family: monospace;
-
-  padding: 10px;
-
-  border-radius: 6px;
-
-  border: 1px solid #ccc;
-
-  margin-top: 10px;
-
-  resize: vertical;
-
-  background: #fff;
-
-}
-
-
-
-.modal-actions {
-
-  display: flex;
-
-  justify-content: flex-end;
-
-  gap: 10px;
-
-  margin-top: 8px;
-
-}
-
-
-
-.modal-actions button {
-
-  padding: 5px 12px;
-
-  border: none;
-
-  border-radius: 6px;
-
-  cursor: pointer;
-
-}
-
-
-
-.modal-actions button:first-child {
-
-  background: #e5e7eb;
-
-  color: #111;
-
-}
-
-
-
-.modal-actions button:last-child {
-
-  background: #2563eb;
-
-  color: white;
-
-}
-
-
-
-/* Loading */
-
-.loading-indicator {
-
-  align-self: center;
-
-  font-size: 0.85rem;
-
-  color: #555;
-
-  font-style: italic;
-
-}
-
-
-
-/* Typing indicator inside bot bubble */
-
-.typing {
+  --btn-border: #d1d5db;
+  --btn-text: #111827;
+  --btn-bg: transparent;
+  --btn-bg-hover: #f8fafc;
+  --btn-border-hover: #cbd5e1;
 
   display: inline-flex;
-
+  align-items: center;
   gap: 6px;
 
-  padding: 8px 12px;
+  padding: 4px 8px;           /* compact */
+  font-size: 0.85rem;
+  line-height: 1;
+  border-radius: 8px;
 
-  align-items: center;
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: 1px solid var(--btn-border);
+  cursor: pointer;
 
+  transition: background .15s ease, border-color .15s ease, transform .05s ease, box-shadow .15s ease;
 }
 
+.run-query-btn:hover,
+.edit-query-btn:hover {
+  background: var(--btn-bg-hover);
+  border-color: var(--btn-border-hover);
+}
 
+.run-query-btn:active,
+.edit-query-btn:active {
+  transform: translateY(1px);
+}
+
+.run-query-btn:focus-visible,
+.edit-query-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #e5e7eb, 0 0 0 4px rgba(0,0,0,0.05);
+}
+
+/* tiny icon inside the buttons */
+.btn-icon {
+  width: 14px;
+  height: 14px;
+  opacity: 0.85;
+}
+
+/* Inline SQL editor */
+.sql-editor {
+  width: 100%;
+  font-family: monospace;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-top: 10px;
+  resize: vertical;
+  background: #fff;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.modal-actions button {
+  padding: 5px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.modal-actions button:first-child {
+  background: #e5e7eb;
+  color: #111;
+}
+
+.modal-actions button:last-child {
+  background: #2563eb;
+  color: white;
+}
+
+/* Loading */
+.loading-indicator {
+  align-self: center;
+  font-size: 0.85rem;
+  color: #555;
+  font-style: italic;
+}
+
+/* Typing indicator inside bot bubble */
+.typing {
+  display: inline-flex;
+  gap: 6px;
+  padding: 8px 12px;
+  align-items: center;
+}
 
 /* Animated bouncing dots */
-
 .dot {
-
   width: 6px;
-
   height: 6px;
-
   background: #555;
-
   border-radius: 50%;
-
   display: inline-block;
-
   animation: chat-bounce 1.2s infinite ease-in-out;
-
 }
-
-.dot:nth-child(2) {
-  animation-delay: 0.15s;
-}
-
-.dot:nth-child(3) {
-  animation-delay: 0.3s;
-}
-
-
+.dot:nth-child(2) { animation-delay: 0.15s; }
+.dot:nth-child(3) { animation-delay: 0.3s; }
 
 @keyframes chat-bounce {
-
-  0%,
-  80%,
-  100% {
-    transform: translateY(0);
-    opacity: 0.35;
-  }
-
-  40% {
-    transform: translateY(-4px);
-    opacity: 1;
-  }
-
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.35; }
+  40% { transform: translateY(-4px); opacity: 1; }
 }
+
+/* ---- Export toolbar above results table ---- */
+.export-btn:hover {
+  background: #f8fafc;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+}
+
+.sql-block {
+  margin-top: 4px;
+  background: #1118270a; /* subtle */
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 10px;
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.9rem;
+}
+
+/* results toolbar + export */
+.result-toolbar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.result-toolbar .spacer {
+  flex: 1;
+}
+
+.export-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.export-btn .caret {
+  pointer-events: none;
+}
+
+.export-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 160px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  padding: 6px;
+  z-index: 10;
+}
+
+.export-item {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.export-item:hover {
+  background: #f3f4f6;
+}
+
+/*OPTIONAL: icon-only buttons — uncomment if you want just glyphs*/
+.run-query-btn span,
+.edit-query-btn span { display: none; }
+.run-query-btn, .edit-query-btn { padding: 4px; }
+
