@@ -1,4 +1,3 @@
-// frontend/src/App.jsx
 import React, { useState, useEffect } from "react";
 import { Routes, Route, useNavigate, useParams } from "react-router-dom";
 import Navbar from "./components/Navbar.jsx";
@@ -181,22 +180,40 @@ function ChatPage({ initialThreadId }) {
   };
 
   /* -------------------------------
-     Run SQL query
+     Run SQL query with file context
   --------------------------------- */
-  const handleRunQuery = async (sql, edited = false) => {
+  const handleRunQuery = async (sql, messageId, dbFileMessageId) => {
     try {
       setIsLoading(true);
+      
+      console.log("Running query with:", { sql, messageId, dbFileMessageId, threadId });
+      
       const res = await fetch(`${API_BASE}/query/run`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: sql, threadId, edited }),
+        body: JSON.stringify({ 
+          query: sql, 
+          threadId, 
+          messageId,
+          dbFileMessageId // Pass both IDs - let backend choose the best strategy
+        }),
       });
+      
       const result = await res.json();
 
       if (result.rows) {
-        setMessages((prev) => [...prev, { sender: "bot", rows: result.rows }]);
+        setMessages((prev) => [...prev, { 
+          sender: "bot", 
+          rows: result.rows,
+          foundVia: result.foundVia // Add this for debugging
+        }]);
       } else if (result.error) {
         appendBot("Error running query: " + result.error);
+        
+        // If it's a debug error, show more helpful information
+        if (result.debug) {
+          console.error("Query debug info:", result.debug);
+        }
       }
     } catch (err) {
       appendBot("Error running query: " + err.message);
@@ -390,4 +407,3 @@ const App = () => {
 };
 
 export default App;
-

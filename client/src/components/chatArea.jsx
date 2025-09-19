@@ -1,4 +1,3 @@
-// frontend/src/components/ChatArea.jsx
 import React, { useState } from "react";
 import "../styles/ChatArea.css";
 
@@ -21,6 +20,12 @@ const isSqlQuery = (text) => {
 const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editValue, setEditValue] = useState("");
+
+  // Function to handle running a query with the associated file
+  const handleRunQueryWithFile = (sql, message) => {
+    // Pass the entire message object so backend can access both _id and dbFileMessageId
+    onRunQuery?.(sql, message._id, message.dbFileMessageId);
+  };
 
   return (
     <div className="chat-area">
@@ -72,7 +77,7 @@ const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
                         <div className="query-actions">
                           <button
                             className="run-query-btn"
-                            onClick={() => onRunQuery?.(cleanedSql)}
+                            onClick={() => handleRunQueryWithFile(cleanedSql, msg)}
                           >
                             Run
                           </button>
