@@ -5,6 +5,7 @@ import SuggestionCards from './components/SuggestionCards.jsx';
 import ChatArea from './components/ChatArea.jsx';
 import InputBar from './components/InputBar.jsx';
 import SideMenu from './components/SideMenu.jsx';
+import AuthForm from './components/AuthForm.jsx'; // ✅ new auth form
 import './styles/App.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE;
@@ -16,16 +17,19 @@ const App = () => {
   const [threadId, setThreadId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
-  
 
-  // Upload history
+  // Upload + chat history
   const [uploadHistory, setUploadHistory] = useState([]);
-
-  // Chat history
   const [chatList, setChatList] = useState([]);
   const [showChatHistory, setShowChatHistory] = useState(false);
 
-  // --- Restore threadId from sessionStorage on load ---
+  // --- Auth state ---
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem("username");
+    return saved ? { username: saved } : null;
+  });
+
+  // === Restore threadId from sessionStorage on load ===
   useEffect(() => {
     const savedThread = sessionStorage.getItem("activeThreadId");
     if (savedThread) {
@@ -33,14 +37,14 @@ const App = () => {
     }
   }, []);
 
-  // --- Persist threadId to sessionStorage when it changes ---
+  // === Persist threadId to sessionStorage ===
   useEffect(() => {
     if (threadId) {
       sessionStorage.setItem("activeThreadId", threadId);
     }
   }, [threadId]);
 
-  // Load upload history on mount
+  // === Load upload history ===
   useEffect(() => {
     async function loadUploadHistory() {
       try {
@@ -56,13 +60,13 @@ const App = () => {
     loadUploadHistory();
   }, []);
 
-  // Append user/bot
+  // === Append helpers ===
   const appendBot = (text) =>
     setMessages((prev) => [...prev, { sender: "bot", text }]);
   const appendUser = (text) =>
     setMessages((prev) => [...prev, { sender: "user", text }]);
 
-  // Load messages when threadId changes
+  // === Load messages when threadId changes ===
   useEffect(() => {
     if (!threadId) return;
     async function loadMessages() {
@@ -79,7 +83,7 @@ const App = () => {
     loadMessages();
   }, [threadId]);
 
-  // Load chat list (for history modal)
+  // === Load chat list ===
   const loadChatList = async () => {
     try {
       const res = await fetch(`${API_BASE}/chats`);
@@ -92,7 +96,7 @@ const App = () => {
     }
   };
 
-  // Handle sending messages or uploads
+  // === Handle send ===
   const handleSendMessage = async (text, file) => {
     if (!text?.trim() && !file) return;
     if (text?.trim()) appendUser(text);
@@ -130,7 +134,7 @@ const App = () => {
 
       if (file) setSelectedFile(null);
 
-      // Refresh upload history after upload
+      // refresh upload history
       if (file && response.ok) {
         try {
           const res = await fetch(`${API_BASE}/history/uploads`);
@@ -150,7 +154,7 @@ const App = () => {
     }
   };
 
-  // Run query
+  // === Run query ===
   const handleRunQuery = async (sql, edited = false) => {
     try {
       setIsLoading(true);
@@ -173,7 +177,7 @@ const App = () => {
     }
   };
 
-  // Confirm SQL edit
+  // === Confirm SQL edit ===
   const handleConfirmEdit = (editedQuery, index) => {
     setMessages((prev) => {
       const updated = [...prev];
@@ -195,7 +199,7 @@ const App = () => {
     updateMessageInDB();
   };
 
-  // Select file from history
+  // === Select file from history ===
   const handleSelectHistory = async (item) => {
     if (!item.id) {
       console.error("History item has no ID to download.", item);
@@ -221,7 +225,7 @@ const App = () => {
     }
   };
 
-  // Open chat from chat history
+  // === Open chat from history ===
   const handleOpenChat = async (chat) => {
     try {
       const res = await fetch(`${API_BASE}/messages/${chat.threadId}`);
@@ -236,19 +240,38 @@ const App = () => {
     }
   };
 
-  // Start a new chat
+  // === New chat ===
   const handleNewChat = () => {
-    sessionStorage.removeItem("activeThreadId"); // clear session storage
+    sessionStorage.removeItem("activeThreadId");
     setThreadId(null);
     setMessages([]);
     setHasUserInteracted(false);
   };
 
+  // === Logout ===
+  const handleLogout = async () => {
+    const sessionId = localStorage.getItem("sessionId");
+    if (sessionId) {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      });
+    }
+    localStorage.clear();
+    setUser(null);
+  };
+
+  // === If not logged in, show AuthForm ===
+  if (!user) {
+    return <AuthForm onAuthSuccess={(data) => setUser(data)} />;
+  }
+
   return (
     <div className="app-container">
       <Navbar 
         onMenuToggle={() => setMenuOpen(!menuOpen)} 
-        onNewChat={handleNewChat} 
+        onNewChat={handleNewChat}
       />
 
       <SideMenu
@@ -258,6 +281,7 @@ const App = () => {
           loadChatList();
           setShowChatHistory(true);
         }}
+        onLogout={() => handleLogout()}
       />
 
       <div className="main-section">
@@ -316,6 +340,8 @@ const App = () => {
           </div>
         </div>
       )}
+
+    
     </div>
   );
 };

@@ -2,7 +2,8 @@
 import React from 'react';
 import '../styles/SideMenu.css'
 
-export default function SideMenu({ open, onToggle, onOpenHistory }) {
+export default function SideMenu({ open, onToggle, onOpenHistory, onLogout }) {
+ 
   return (
     <aside className={`side-menu ${open ? 'open' : ''}`}>
       <button
@@ -13,11 +14,12 @@ export default function SideMenu({ open, onToggle, onOpenHistory }) {
       >
         ⋯
       </button>
+{/*i want the user when he press the logout to be redirected to the login page */}
 
       <ul>
         <li>Settings</li>
         <li onClick={onOpenHistory} style={{ cursor: "pointer" }}>History</li>
-        <li>Logout</li>
+        <li onClick={onLogout} style={{ cursor: "pointer" }}>Logout</li>
       </ul>
     </aside>
   );
