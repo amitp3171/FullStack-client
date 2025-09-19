@@ -277,7 +277,7 @@ const App = () => {
     }
   };
 
-  // ... rest of your code remains the same ...
+  // Run SQL query (normal or edited)
   // Run SQL query (normal or edited)
   const handleRunQuery = async (sql, edited = false) => {
     try {
@@ -290,12 +290,21 @@ const App = () => {
       const result = await response.json();
 
       if (result.rows) {
-        setMessages((prev) => [...prev, { sender: "bot", rows: result.rows }]);
+        setMessages((prev) => [
+          ...prev,
+          { sender: "bot", rows: result.rows, query: sql }, // <— keep SQL with rows
+        ]);
       } else if (result.error) {
-        appendBot("Error running query: " + result.error);
+        setMessages((prev) => [
+          ...prev,
+          { sender: "bot", text: "Error running query: " + result.error },
+        ]);
       }
     } catch (err) {
-      appendBot("Error running query: " + err.message);
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: "Error running query: " + err.message },
+      ]);
     } finally {
       setIsLoading(false);
     }

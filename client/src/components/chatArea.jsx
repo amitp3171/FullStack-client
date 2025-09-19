@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import "../styles/ChatArea.css";
 
+const API_BASE = import.meta.env.VITE_API_BASE;
+
 const isSqlQuery = (text) => {
   if (!text) return false;
   const cleaned = text
@@ -64,6 +66,21 @@ const downloadBlob = (data, filename, type) => {
 };
 // ------------------------------------
 
+// Remove a trailing top-level LIMIT (and optional OFFSET) if present
+const stripTrailingLimit = (sql = "") =>
+  sql.replace(/\blimit\s+\d+\s*(offset\s+\d+)?\s*;?\s*$/i, "").trim();
+
+// Find the closest earlier SQL bubble (skip explanation bubbles)
+const findNearestSqlBefore = (messages, idx) => {
+  for (let j = idx - 1; j >= 0; j--) {
+    const m = messages[j];
+    if (m?.text && isSqlQuery(m.text)) {
+      return m.text.replace(/```sql|```/g, "").trim();
+    }
+  }
+  return null;
+};
+
 const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editValue, setEditValue] = useState("");
@@ -85,20 +102,65 @@ const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
     };
   }, []);
 
-  const handleExport = (rows, kind) => {
-    const ts = fileTimestamp();
-    if (kind === "csv") {
-      const csv = rowsToCSV(rows);
-      downloadBlob(csv, `results-${ts}.csv`, "text/csv;charset=utf-8");
-    } else {
-      const json = JSON.stringify(rows ?? [], null, 2);
+  // Re-run the query with no LIMIT and export the full result set
+  const exportFull = async ({ sql, kind, fallbackRows }) => {
+    try {
+      if (!sql) {
+        // no sql? fallback to visible rows
+        const data =
+          kind === "csv"
+            ? rowsToCSV(fallbackRows)
+            : JSON.stringify(fallbackRows ?? [], null, 2);
+        const ext = kind === "csv" ? "csv" : "json";
+        downloadBlob(
+          data,
+          `results-${fileTimestamp()}.${ext}`,
+          kind === "csv"
+            ? "text/csv;charset=utf-8"
+            : "application/json;charset=utf-8"
+        );
+        return;
+      }
+
+      const sqlNoLimit = stripTrailingLimit(sql);
+
+      const res = await fetch(`${API_BASE}/query/run`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        // If your backend supports it, use this to bypass any server cap:
+        body: JSON.stringify({ query: sqlNoLimit, fullExport: true }),
+      });
+      const json = await res.json();
+
+      const rows = Array.isArray(json.rows) ? json.rows : [];
+      const data =
+        kind === "csv" ? rowsToCSV(rows) : JSON.stringify(rows, null, 2);
+      const ext = kind === "csv" ? "csv" : "json";
       downloadBlob(
-        json,
-        `results-${ts}.json`,
-        "application/json;charset=utf-8"
+        data,
+        `results-${fileTimestamp()}.${ext}`,
+        kind === "csv"
+          ? "text/csv;charset=utf-8"
+          : "application/json;charset=utf-8"
       );
+    } catch (e) {
+      // graceful fallback to current rows if the re-run fails
+      console.error("Export full failed, falling back:", e);
+      const data =
+        kind === "csv"
+          ? rowsToCSV(fallbackRows || [])
+          : JSON.stringify(fallbackRows || [], null, 2);
+      const ext = kind === "csv" ? "csv" : "json";
+      downloadBlob(
+        data,
+        `results-${fileTimestamp()}.${ext}`,
+        kind === "csv"
+          ? "text/csv;charset=utf-8"
+          : "application/json;charset=utf-8"
+      );
+    } finally {
+      setOpenExportFor(null);
     }
-    setOpenExportFor(null);
   };
 
   return (
@@ -115,6 +177,9 @@ const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
           ? msg.text.replace(/```sql|```/g, "").trim()
           : "";
         const canEdit = msg.allowEdit !== false; // <-- Run-only when false
+
+        // Prefer SQL stored on the results message; else scan backward to find it
+        const exportSql = msg.query || findNearestSqlBefore(messages, i);
 
         return (
           <div
@@ -272,14 +337,26 @@ const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
                             <button
                               className="export-item"
                               role="menuitem"
-                              onClick={() => handleExport(msg.rows, "csv")}
+                              onClick={() =>
+                                exportFull({
+                                  sql: exportSql,
+                                  kind: "csv",
+                                  fallbackRows: msg.rows,
+                                })
+                              }
                             >
                               Export as CSV
                             </button>
                             <button
                               className="export-item"
                               role="menuitem"
-                              onClick={() => handleExport(msg.rows, "json")}
+                              onClick={() =>
+                                exportFull({
+                                  sql: exportSql,
+                                  kind: "json",
+                                  fallbackRows: msg.rows,
+                                })
+                              }
                             >
                               Export as JSON
                             </button>
