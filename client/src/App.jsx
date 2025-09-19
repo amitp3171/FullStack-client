@@ -16,6 +16,7 @@ const App = () => {
   const [threadId, setThreadId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  
 
   // Upload history
   const [uploadHistory, setUploadHistory] = useState([]);
@@ -24,18 +25,18 @@ const App = () => {
   const [chatList, setChatList] = useState([]);
   const [showChatHistory, setShowChatHistory] = useState(false);
 
-  // --- Restore threadId from localStorage on load ---
+  // --- Restore threadId from sessionStorage on load ---
   useEffect(() => {
-    const savedThread = localStorage.getItem("activeThreadId");
+    const savedThread = sessionStorage.getItem("activeThreadId");
     if (savedThread) {
       setThreadId(savedThread);
     }
   }, []);
 
-  // --- Persist threadId to localStorage when it changes ---
+  // --- Persist threadId to sessionStorage when it changes ---
   useEffect(() => {
     if (threadId) {
-      localStorage.setItem("activeThreadId", threadId);
+      sessionStorage.setItem("activeThreadId", threadId);
     }
   }, [threadId]);
 
@@ -237,7 +238,7 @@ const App = () => {
 
   // Start a new chat
   const handleNewChat = () => {
-    localStorage.removeItem("activeThreadId"); // clear stored chat
+    sessionStorage.removeItem("activeThreadId"); // clear session storage
     setThreadId(null);
     setMessages([]);
     setHasUserInteracted(false);
