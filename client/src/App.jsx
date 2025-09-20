@@ -107,7 +107,24 @@ function ChatPage({ initialThreadId, user }) {
       try {
         const res = await fetch(`${API_BASE}/messages/${threadId}`);
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) setMessages(data);
+        if (Array.isArray(data) && data.length > 0) {
+          // Only load from database on initial load or when changing threads
+          setMessages(prev => {
+            // If we already have messages and some are very recent (less than 10 seconds old),
+            // don't overwrite them to preserve download objects
+            const now = Date.now();
+            const hasRecentMessages = prev.some(msg => 
+              !msg.createdAt || (now - new Date(msg.createdAt).getTime()) < 10000
+            );
+            
+            if (hasRecentMessages && prev.length > 0) {
+              console.log("Preserving recent messages to keep download objects");
+              return prev;
+            }
+            
+            return data;
+          });
+        }
       } catch (err) {
         console.error("Failed to load messages:", err);
       }
@@ -159,7 +176,19 @@ function ChatPage({ initialThreadId, user }) {
 
       const result = await response.json();
 
-      if (result.openai) appendBot(result.openai);
+      // If server gives a download, show a clickable link bubble
+      if (result.download) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "bot",
+            text: result.openai || "",
+            download: result.download,
+          },
+        ]);
+      } else if (result.openai) {
+        appendBot(result.openai);
+      }
 
       if (result.threadId && result.threadId !== threadId) {
         setThreadId(result.threadId);
