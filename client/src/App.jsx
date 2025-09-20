@@ -1,12 +1,12 @@
-// App.jsx
 import React, { useState, useEffect } from "react";
-import { Routes, Route, useNavigate, useParams } from "react-router-dom";
+import { Routes, Route, useNavigate, useParams, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar.jsx";
 import SuggestionCards from "./components/SuggestionCards.jsx";
 import ChatArea from "./components/ChatArea.jsx";
 import InputBar from "./components/InputBar.jsx";
 import SideMenu from "./components/SideMenu.jsx";
-import AuthForm from "./components/AuthForm.jsx"; 
+import Login from "./components/Login.jsx";
+import Register from "./components/Register.jsx";
 import "./styles/App.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
@@ -27,9 +27,19 @@ const extractSql = (s = "") => {
 };
 
 /* -------------------------------
+   ProtectedRoute: Wrapper for authenticated routes
+--------------------------------- */
+function ProtectedRoute({ children, user }) {
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+}
+
+/* -------------------------------
    ChatPage: a single conversation
 --------------------------------- */
-function ChatPage({ initialThreadId }) {
+function ChatPage({ initialThreadId, user }) {
   const { threadId: routeThreadId } = useParams(); // /c/:threadId
   const navigate = useNavigate();
 
@@ -47,12 +57,6 @@ function ChatPage({ initialThreadId }) {
   // Sidebar vs modal
   const [menuOpen, setMenuOpen] = useState(false);
   const [showChatHistory, setShowChatHistory] = useState(false);
-
-  // Auth
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem("username");
-    return saved ? { username: saved } : null;
-  });
 
   /* -------------------------------
      Restore threadId from storage
@@ -223,46 +227,6 @@ function ChatPage({ initialThreadId }) {
     }
   };
 
-  //------ handle QuickResult-------
- const handleQuickResult = async (text, file) => {
-  if (!text?.trim() && !file) return;
-
-  appendUser(text);         // 👈 still append the user message
-  setHasUserInteracted(true); // 👈 hide suggestions immediately
-
-  setIsLoading(true);
-  try {
-    const form = new FormData();
-    if (file) form.append("file", file);
-    form.append("prompt", text);
-    if (threadId) form.append("threadId", threadId);
-
-    const res = await fetch(`${API_BASE}/chat/quickresult`, {
-      method: "POST",
-      body: form,
-    });
-    const data = await res.json();
-
-    if (data.error) throw new Error(data.error);
-
-    if (data.threadId && data.threadId !== threadId) {
-      setThreadId(data.threadId);
-      navigate(`/c/${data.threadId}`);
-    }
-
-    // append result only
-    if (data.rows) {
-      setMessages((prev) => [
-        ...prev,
-        { sender: "bot", rows: data.rows, type: "result" },
-      ]);
-    }
-  } catch (err) {
-    console.error("Quick result error:", err);
-  } finally {
-    setIsLoading(false);
-  }
-};
   /* -------------------------------
      Confirm SQL edit
   --------------------------------- */
@@ -351,16 +315,19 @@ function ChatPage({ initialThreadId }) {
         body: JSON.stringify({ sessionId }),
       });
     }
+    
+    // Clear all storage
     localStorage.clear();
-    setUser(null);
+    sessionStorage.clear();
+    
+    // Reset component state to ensure clean slate
+    setThreadId(null);
+    setMessages([]);
+    setHasUserInteracted(false);
+    setSelectedFile(null);
+    
+    navigate("/login");
   };
-
-  /* -------------------------------
-     Auth guard
-  --------------------------------- */
-  if (!user) {
-    return <AuthForm onAuthSuccess={(data) => setUser(data)} />;
-  }
 
   /* -------------------------------
      Render
@@ -396,7 +363,6 @@ function ChatPage({ initialThreadId }) {
 
       <InputBar
         onSend={handleSendMessage}
-        onQuickResult={handleQuickResult} 
         history={uploadHistory}
         onSelectHistory={handleSelectHistory}
         isLoading={isLoading}
@@ -437,13 +403,40 @@ function ChatPage({ initialThreadId }) {
 }
 
 /* -------------------------------
-   Top-level App: just routes
+   Top-level App: routing + auth
 --------------------------------- */
 const App = () => {
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem("username");
+    return saved ? { username: saved } : null;
+  });
+
   return (
     <Routes>
-      <Route path="/" element={<ChatPage initialThreadId={null} />} />
-      <Route path="/c/:threadId" element={<ChatPage />} />
+      {/* Auth routes - accessible when not logged in */}
+      <Route path="/login" element={<Login onAuthSuccess={(userData) => setUser(userData)} />} />
+      <Route path="/register" element={<Register />} />
+      
+      {/* Protected routes - require authentication */}
+      <Route 
+        path="/" 
+        element={
+          <ProtectedRoute user={user}>
+            <ChatPage initialThreadId={null} user={user} />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/c/:threadId" 
+        element={
+          <ProtectedRoute user={user}>
+            <ChatPage user={user} />
+          </ProtectedRoute>
+        } 
+      />
+      
+      {/* Catch-all redirect */}
+      <Route path="*" element={<Navigate to={user ? "/" : "/login"} replace />} />
     </Routes>
   );
 };
