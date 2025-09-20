@@ -19,7 +19,7 @@ const isSqlQuery = (text) => {
 };
 
 
-const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
+const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading, user }) => {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editValue, setEditValue] = useState("");
 
@@ -32,7 +32,7 @@ const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
   return (
     <div className="chat-area">
       {messages.map((msg, i) => {
-        const isUser = msg.sender === "user";
+        const isUser = user && msg.sender === user._id;
         const isBot = msg.sender === "bot";
 
         const hasRows = Array.isArray(msg.rows) && msg.rows.length > 0;

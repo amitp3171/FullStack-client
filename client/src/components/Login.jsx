@@ -38,7 +38,7 @@ export default function Login({ onAuthSuccess }) {
       if (!res.ok) throw new Error(data.error || "Login failed");
 
       localStorage.setItem("sessionId", data.sessionId);
-      localStorage.setItem("username", data.user.username);
+      localStorage.setItem("user", JSON.stringify(data.user)); // Store the whole user object
 
       onAuthSuccess(data.user);
       navigate("/"); // Navigate to home page

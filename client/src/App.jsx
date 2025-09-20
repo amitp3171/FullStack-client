@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Routes, Route, useNavigate, useParams, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar.jsx";
 import SuggestionCards from "./components/SuggestionCards.jsx";
-import ChatArea from "./components/ChatArea.jsx";
+import ChatArea from "./components/chatArea.jsx";
 import InputBar from "./components/InputBar.jsx";
 import SideMenu from "./components/SideMenu.jsx";
 import Login from "./components/Login.jsx";
@@ -96,7 +96,7 @@ function ChatPage({ initialThreadId, user }) {
   const appendBot = (text) =>
     setMessages((prev) => [...prev, { sender: "bot", text }]);
   const appendUser = (text) =>
-    setMessages((prev) => [...prev, { sender: "user", text }]);
+    setMessages((prev) => [...prev, { sender: user._id, text }]);
 
   /* -------------------------------
      Load messages when threadId changes
@@ -149,6 +149,8 @@ function ChatPage({ initialThreadId, user }) {
   --------------------------------- */
   const handleSendMessage = async (text, file) => {
     if (!text?.trim() && !file) return;
+    
+    // Always show user message immediately, regardless of file upload
     if (text?.trim()) appendUser(text);
     setHasUserInteracted(true);
 
@@ -161,6 +163,7 @@ function ChatPage({ initialThreadId, user }) {
         formData.append("file", file);
         if (text?.trim()) formData.append("prompt", text);
         if (threadId) formData.append("threadId", threadId);
+        formData.append("userId", user?.id || user?.username || "anonymous");
 
         response = await fetch(`${API_BASE}/upload`, {
           method: "POST",
@@ -170,7 +173,11 @@ function ChatPage({ initialThreadId, user }) {
         response = await fetch(`${API_BASE}/chat/flow`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ threadId, message: text }),
+          body: JSON.stringify({ 
+            threadId, 
+            message: text,
+            userId: user?.id || user?.username || "anonymous"
+          }),
         });
       }
 
@@ -269,6 +276,7 @@ function ChatPage({ initialThreadId, user }) {
     if (file) form.append("file", file);
     form.append("prompt", text);
     if (threadId) form.append("threadId", threadId);
+    form.append("userId", user?.id || user?.username || "anonymous");
 
     const res = await fetch(`${API_BASE}/chat/quickresult`, {
       method: "POST",
@@ -428,6 +436,7 @@ function ChatPage({ initialThreadId, user }) {
           onRunQuery={handleRunQuery}
           onConfirmEdit={handleConfirmEdit}
           isLoading={isLoading}
+          user={user}
         />
       </div>
 
@@ -478,14 +487,26 @@ function ChatPage({ initialThreadId, user }) {
 --------------------------------- */
 const App = () => {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem("username");
-    return saved ? { username: saved } : null;
+    const savedUser = localStorage.getItem("user");
+    try {
+      // Parse the stored JSON
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch (e) {
+      // If parsing fails, return null
+      console.error("Failed to parse user from localStorage", e);
+      return null;
+    }
   });
+
+  const handleAuthSuccess = (userData) => {
+    localStorage.setItem("user", JSON.stringify(userData)); // Store full user object
+    setUser(userData);
+  };
 
   return (
     <Routes>
       {/* Auth routes - accessible when not logged in */}
-      <Route path="/login" element={<Login onAuthSuccess={(userData) => setUser(userData)} />} />
+      <Route path="/login" element={<Login onAuthSuccess={handleAuthSuccess} />} />
       <Route path="/register" element={<Register />} />
       
       {/* Protected routes - require authentication */}
