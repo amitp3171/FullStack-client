@@ -1,17 +1,17 @@
-//frontend/src/components/inputBar.jsx
+//src/components/ InputBar.jsx
 import React, { useState, useRef, useEffect } from "react";
 import "../styles/InputBar.css";
 
 const InputBar = ({
   onSend,
-  history = [], // Now expects: [{ id, name, size?, updatedAt?, threadId?, preview? }]
-  onSelectHistory, // (item) => void
+  onQuickResult, // New prop for quick result
+  history = [], // Array of { id, name, threadId..}
+  onSelectHistory,
   accept = ".db,.sqlite,.sql,.csv,.json,.xlsx,.xls",
-  selectedFile, // New prop
-  onFileSelect, // New prop
+  selectedFile,
+  onFileSelect,
 }) => {
   const [input, setInput] = useState("");
-  // const [selectedFile, setSelectedFile] = useState(null); // Removed, now a prop
   const [menuOpen, setMenuOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -22,7 +22,14 @@ const InputBar = ({
     if (input.trim() || selectedFile) {
       onSend?.(input, selectedFile);
       setInput("");
-      // onFileSelect(null); // Clearing is handled by App component after send
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleQuickResult = () => {
+    if (input.trim() || selectedFile) {
+      onQuickResult?.(input, selectedFile);
+      setInput("");
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
@@ -38,8 +45,7 @@ const InputBar = ({
 
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
-    if (file) onFileSelect(file); // Use prop setter
-    // allow selecting same file again later
+    if (file) onFileSelect(file);
     event.target.value = "";
   };
 
@@ -48,7 +54,6 @@ const InputBar = ({
     setShowHistory(true);
   };
 
-  // close the menu when clicking outside
   useEffect(() => {
     const onDocClick = (e) => {
       if (!menuRef.current) return;
@@ -70,10 +75,10 @@ const InputBar = ({
           onKeyDown={handleKeyDown}
         />
 
-        {/* Upload dropdown inside the bar */}
+        {/* Upload dropdown */}
         <div className="upload-wrap" ref={menuRef}>
           <button
-            className="upload-btn" // ⬅️ back to .upload-btn, styled as round
+            className="upload-btn"
             onClick={() => setMenuOpen((v) => !v)}
             aria-haspopup="menu"
             aria-expanded={menuOpen}
@@ -81,28 +86,14 @@ const InputBar = ({
             title="Upload options"
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path
-                d="M10 6V14"
-                stroke="#000"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-              <path
-                d="M6 10H14"
-                stroke="#000"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
+              <path d="M10 6V14" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+              <path d="M6 10H14" stroke="#000" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </button>
 
           {menuOpen && (
             <div className="upload-menu" role="menu">
-              <button
-                className="upload-menu-item"
-                role="menuitem"
-                onClick={handlePickFromComputer}
-              >
+              <button className="upload-menu-item" role="menuitem" onClick={handlePickFromComputer}>
                 📁 Pick from computer
               </button>
               <button
@@ -110,11 +101,7 @@ const InputBar = ({
                 role="menuitem"
                 onClick={handleChooseFromHistory}
                 disabled={history.length === 0}
-                title={
-                  history.length === 0
-                    ? "No history yet"
-                    : "Choose from history"
-                }
+                title={history.length === 0 ? "No history yet" : "Choose from history"}
               >
                 🕘 Choose from history
               </button>
@@ -124,30 +111,6 @@ const InputBar = ({
 
         {selectedFile && (
           <span className="file-preview" title={selectedFile.name}>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              style={{ verticalAlign: "middle", marginRight: 4 }}
-            >
-              <rect
-                x="2"
-                y="2"
-                width="12"
-                height="12"
-                rx="2"
-                stroke="#222"
-                strokeWidth="1.5"
-                fill="#fff"
-              />
-              <path
-                d="M5 8H11"
-                stroke="#222"
-                strokeWidth="1.2"
-                strokeLinecap="round"
-              />
-            </svg>
             {selectedFile.name}
           </span>
         )}
@@ -160,24 +123,21 @@ const InputBar = ({
           accept={accept}
         />
 
-        <button className="send-btn" onClick={handleSend}>
-          Send
+        {/* Normal send */}
+        <button className="send-btn" onClick={handleSend}>Send</button>
+
+        {/* NEW Quick Result button */}
+        <button className="quick-result-btn" onClick={handleQuickResult}>
+          Quick Result
         </button>
       </footer>
 
-      {/* Simple history modal */}
       {showHistory && (
         <div className="modal-overlay" onClick={() => setShowHistory(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Recent uploads</h3>
-              <button
-                className="icon-btn"
-                onClick={() => setShowHistory(false)}
-                aria-label="Close"
-              >
-                ✕
-              </button>
+              <button className="icon-btn" onClick={() => setShowHistory(false)}>✕</button>
             </div>
 
             {history.length === 0 ? (
@@ -188,15 +148,6 @@ const InputBar = ({
                   <li key={item.id} className="history-row">
                     <div className="history-meta">
                       <div className="history-name">{item.name}</div>
-                      <div className="history-sub">
-                        {item.size
-                          ? `${(item.size / 1024).toFixed(1)} KB • `
-                          : ""}
-                        {item.updatedAt
-                          ? new Date(item.updatedAt).toLocaleString()
-                          : ""}
-                        {item.preview && ` • ${item.preview}`}
-                      </div>
                     </div>
                     <button
                       className="btn btn-small"

@@ -1,3 +1,4 @@
+// client/src/components/AuthForm.jsx
 import React, { useState } from "react";
 import "../styles/AuthForm.css";
 

@@ -1,3 +1,4 @@
+// App.jsx
 import React, { useState, useEffect } from "react";
 import { Routes, Route, useNavigate, useParams } from "react-router-dom";
 import Navbar from "./components/Navbar.jsx";
@@ -222,6 +223,45 @@ function ChatPage({ initialThreadId }) {
     }
   };
 
+  //------ handle QuickResult-------
+  const handleQuickResult = async (text, file) => {
+  if (!text?.trim() && !file) return;
+
+  // Append user message
+  appendUser(text);
+
+  try {
+    setIsLoading(true);
+    const formData = new FormData();
+    formData.append("prompt", text);
+    if (file) formData.append("file", file);
+    if (threadId) formData.append("threadId", threadId);
+
+    const res = await fetch(`${API_BASE}/chat/quick-result`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const result = await res.json();
+
+    if (result.rows) {
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", rows: result.rows, type: "result" },
+      ]);
+    }
+
+    if (result.threadId && result.threadId !== threadId) {
+      setThreadId(result.threadId);
+      navigate(`/c/${result.threadId}`);
+    }
+  } catch (err) {
+    appendBot(`Error: Quick Result failed (${err.message})`);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
   /* -------------------------------
      Confirm SQL edit
   --------------------------------- */
@@ -355,6 +395,7 @@ function ChatPage({ initialThreadId }) {
 
       <InputBar
         onSend={handleSendMessage}
+        onQuickResult={handleQuickResult} 
         history={uploadHistory}
         onSelectHistory={handleSelectHistory}
         isLoading={isLoading}

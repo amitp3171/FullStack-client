@@ -1,3 +1,4 @@
+// client/src/components/ChatArea.jsx
 import React, { useState } from "react";
 import "../styles/ChatArea.css";
 
@@ -16,6 +17,7 @@ const isSqlQuery = (text) => {
     cleaned.startsWith("with")
   );
 };
+
 
 const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
   const [editingIndex, setEditingIndex] = useState(null);
