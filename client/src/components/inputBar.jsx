@@ -19,20 +19,22 @@ const InputBar = ({
   const menuRef = useRef(null);
 
   const handleSend = () => {
-    if (input.trim() || selectedFile) {
-      onSend?.(input, selectedFile);
-      setInput("");
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
+  if (input.trim() || selectedFile) {
+    onSend?.(input, selectedFile);
+    setInput("");
+    onFileSelect?.(null);  // 👈 clear file after send
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+};
 
   const handleQuickResult = () => {
-    if (input.trim() || selectedFile) {
-      onQuickResult?.(input, selectedFile);
-      setInput("");
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
+  if (input.trim() || selectedFile) {
+    onQuickResult?.(input, selectedFile);
+    setInput("");
+    onFileSelect?.(null);  // 👈 clear file after quick result
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+};
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter") handleSend();
@@ -127,7 +129,7 @@ const InputBar = ({
         <button className="send-btn" onClick={handleSend}>Send</button>
 
         {/* NEW Quick Result button */}
-        <button className="quick-result-btn" onClick={handleQuickResult}>
+        <button type="button" className="quick-result-btn" onClick={handleQuickResult}>
           Quick Result
         </button>
       </footer>
