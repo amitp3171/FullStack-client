@@ -227,6 +227,47 @@ function ChatPage({ initialThreadId, user }) {
     }
   };
 
+  //------ handle QuickResult-------
+ const handleQuickResult = async (text, file) => {
+  if (!text?.trim() && !file) return;
+
+  appendUser(text);         // 👈 still append the user message
+  setHasUserInteracted(true); // 👈 hide suggestions immediately
+
+  setIsLoading(true);
+  try {
+    const form = new FormData();
+    if (file) form.append("file", file);
+    form.append("prompt", text);
+    if (threadId) form.append("threadId", threadId);
+
+    const res = await fetch(`${API_BASE}/chat/quickresult`, {
+      method: "POST",
+      body: form,
+    });
+    const data = await res.json();
+
+    if (data.error) throw new Error(data.error);
+
+    if (data.threadId && data.threadId !== threadId) {
+      setThreadId(data.threadId);
+      navigate(`/c/${data.threadId}`);
+    }
+
+    // append result only
+    if (data.rows) {
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", rows: data.rows, type: "result" },
+      ]);
+    }
+  } catch (err) {
+    console.error("Quick result error:", err);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
   /* -------------------------------
      Confirm SQL edit
   --------------------------------- */
@@ -363,6 +404,7 @@ function ChatPage({ initialThreadId, user }) {
 
       <InputBar
         onSend={handleSendMessage}
+        onQuickResult={handleQuickResult} 
         history={uploadHistory}
         onSelectHistory={handleSelectHistory}
         isLoading={isLoading}
