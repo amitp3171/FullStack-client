@@ -223,6 +223,9 @@
 }
 
 .export-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 6px 10px;
   font-size: 0.9rem;
   background: #f9fafb;
@@ -232,16 +235,13 @@
   cursor: pointer;
   transition: background .15s ease, border-color .15s ease, transform .05s ease, box-shadow .15s ease;
 }
-
 .export-toggle:hover {
   background: #f8fafc;
   border-color: #cbd5e1;
 }
-
 .export-toggle:active {
   transform: translateY(1px);
 }
-
 .export-toggle:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px #e5e7eb, 0 0 0 4px rgba(0,0,0,0.05);
@@ -251,8 +251,8 @@
 .export-menu {
   position: absolute;
   right: 0;
-  top: calc(100% + 6px);
-  min-width: 160px;
+  top: calc(10% + 6px);
+  width: 140px;
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -271,8 +271,8 @@
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.9rem;
+  margin-left: 0 !important;
 }
-
 .export-item:hover {
   background: #f3f4f6;
 }

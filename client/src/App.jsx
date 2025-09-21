@@ -17,6 +17,7 @@ const authHeaders = (extra = {}) => {
   return sessionId ? { ...extra, "x-session-id": sessionId } : extra;
 };
 
+
 // Try to pull SQL out of a model response
 const extractSql = (s = "") => {
   if (!s) return "";

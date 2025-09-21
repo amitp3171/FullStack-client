@@ -17,7 +17,6 @@ export default function SideMenu({ open, onToggle, onOpenHistory, onLogout }) {
 {/*i want the user when he press the logout to be redirected to the login page */}
 
       <ul>
-        <li>Settings</li>
         <li onClick={onOpenHistory} style={{ cursor: "pointer" }}>History</li>
         <li onClick={onLogout} style={{ cursor: "pointer" }}>Logout</li>
       </ul>
