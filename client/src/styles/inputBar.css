@@ -173,3 +173,19 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+.quick-result-btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 20px;
+  background: #16a34a;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+  margin-left: 6px;
+}
+
+.quick-result-btn:hover {
+  background: #15803d;
+}

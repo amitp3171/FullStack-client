@@ -1,7 +1,8 @@
+// client/src/components/ChatArea.jsx
 import React, { useState, useEffect, useRef } from "react";
-import "../styles/ChatArea.css";
+import "../styles/chatArea.css";
 
-const API_BASE = import.meta.env.VITE_API_BASE;
+const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
 const isSqlQuery = (text) => {
   if (!text) return false;
@@ -19,7 +20,7 @@ const isSqlQuery = (text) => {
   );
 };
 
-// ---------- export helpers ----------
+/* export helpers (local-only) */
 const fileTimestamp = () => {
   const d = new Date();
   const p = (n) => String(n).padStart(2, "0");
@@ -30,7 +31,6 @@ const fileTimestamp = () => {
 
 const rowsToCSV = (rows = []) => {
   if (!rows.length) return "";
-  // union of all keys so we don't drop sparse columns
   const headers = Array.from(
     rows.reduce((set, r) => {
       Object.keys(r || {}).forEach((k) => set.add(k));
@@ -64,13 +64,10 @@ const downloadBlob = (data, filename, type) => {
   a.remove();
   URL.revokeObjectURL(url);
 };
-// ------------------------------------
 
-// Remove a trailing top-level LIMIT (and optional OFFSET) if present
 const stripTrailingLimit = (sql = "") =>
   sql.replace(/\blimit\s+\d+\s*(offset\s+\d+)?\s*;?\s*$/i, "").trim();
 
-// Find the closest earlier SQL bubble (skip explanation bubbles)
 const findNearestSqlBefore = (messages, idx) => {
   for (let j = idx - 1; j >= 0; j--) {
     const m = messages[j];
@@ -84,7 +81,7 @@ const findNearestSqlBefore = (messages, idx) => {
 const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editValue, setEditValue] = useState("");
-  const [openExportFor, setOpenExportFor] = useState(null); // which message index has its export menu open
+  const [openExportFor, setOpenExportFor] = useState(null);
   const exportWrapRef = useRef(null);
 
   // close export menu on outside click or on Escape
@@ -102,11 +99,16 @@ const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
     };
   }, []);
 
+  // Function to handle running a query with the associated file
+  const handleRunQueryWithFile = (sql, message) => {
+    // Pass the entire message object so backend can access both _id and dbFileMessageId
+    onRunQuery?.(sql, message._id, message.dbFileMessageId);
+  };
+
   // Re-run the query with no LIMIT and export the full result set
   const exportFull = async ({ sql, kind, fallbackRows }) => {
     try {
       if (!sql) {
-        // no sql? fallback to visible rows
         const data =
           kind === "csv"
             ? rowsToCSV(fallbackRows)
@@ -127,7 +129,6 @@ const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
       const res = await fetch(`${API_BASE}/query/run`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // If your backend supports it, use this to bypass any server cap:
         body: JSON.stringify({ query: sqlNoLimit, fullExport: true }),
       });
       const json = await res.json();
@@ -144,8 +145,6 @@ const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
           : "application/json;charset=utf-8"
       );
     } catch (e) {
-      // graceful fallback to current rows if the re-run fails
-      console.error("Export full failed, falling back:", e);
       const data =
         kind === "csv"
           ? rowsToCSV(fallbackRows || [])
@@ -176,9 +175,7 @@ const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
         const cleanedSql = sqlLike
           ? msg.text.replace(/```sql|```/g, "").trim()
           : "";
-        const canEdit = msg.allowEdit !== false; // <-- Run-only when false
 
-        // Prefer SQL stored on the results message; else scan backward to find it
         const exportSql = msg.query || findNearestSqlBefore(messages, i);
 
         return (
@@ -195,15 +192,43 @@ const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
                 {/* Inline download link, if present */}
                 {msg.download ? (
                   <div className="download-inline">
-                    Your file is ready,{" "}
-                    <a
-                      className="file-link"
-                      href={msg.download.url}
-                      download={msg.download.filename}
-                    >
-                      {msg.download.filename}
-                    </a>
-                    .
+                    {msg.text ? (
+                      <div className="message-text">
+                        {msg.text.replace(/\*\*(.*?)\*\*/g, "$1")}
+                      </div>
+                    ) : (
+                      <>
+                        Your file is ready,{" "}
+                        <a
+                          className="file-link"
+                          href={msg.download.url}
+                          download={msg.download.filename}
+                        >
+                          {msg.download.filename}
+                        </a>
+                        .
+                      </>
+                    )}
+                    {msg.text && (
+                      <div style={{ marginTop: "10px" }}>
+                        <a
+                          className="file-link"
+                          href={msg.download.url}
+                          download={msg.download.filename}
+                          style={{
+                            display: "inline-block",
+                            padding: "8px 16px",
+                            backgroundColor: "#007bff",
+                            color: "white",
+                            textDecoration: "none",
+                            borderRadius: "4px",
+                            fontSize: "14px",
+                          }}
+                        >
+                          Download {msg.download.filename}
+                        </a>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <>
@@ -217,22 +242,11 @@ const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
                         <div className="query-actions">
                           <button
                             className="run-query-btn"
-                            onClick={() => onRunQuery?.(cleanedSql)}
-                            title="Run query"
+                            onClick={() =>
+                              handleRunQueryWithFile(cleanedSql, msg)
+                            }
                           >
-                            <svg
-                              className="btn-icon"
-                              width="14"
-                              height="14"
-                              viewBox="0 0 24 24"
-                              aria-hidden="true"
-                            >
-                              <path
-                                d="M8 5v14l11-7-11-7z"
-                                fill="currentColor"
-                              />
-                            </svg>
-                            <span>Run</span>
+                            Run
                           </button>
 
                           {canEdit && (
@@ -297,75 +311,61 @@ const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
 
                 {/* SQL results + export */}
                 {hasRows && (
-                  <div className="sql-result">
-                    {/* toolbar */}
-                    <div className="result-toolbar">
-                      <div className="spacer" />
-                      <div
-                        className="export-wrap"
-                        ref={exportWrapRef}
-                        onClick={(e) => e.stopPropagation()}
+                  <div className="sql-result" ref={exportWrapRef}>
+                    {/* Export toggle */}
+                    <div
+                      className="export-controls"
+                      style={{ textAlign: "right", marginBottom: 8 }}
+                    >
+                      <button
+                        className="export-toggle"
+                        onClick={() =>
+                          setOpenExportFor((v) => (v === i ? null : i))
+                        }
+                        aria-haspopup="menu"
+                        aria-expanded={openExportFor === i}
+                        aria-label="Export options"
+                        title="Export options"
                       >
-                        <button
-                          className="export-btn"
-                          aria-haspopup="menu"
-                          aria-expanded={openExportFor === i}
-                          onClick={() =>
-                            setOpenExportFor((idx) => (idx === i ? null : i))
-                          }
-                          title="Export results"
+                        Export ▾
+                      </button>
+                      {openExportFor === i && (
+                        <div
+                          className="export-menu"
+                          role="menu"
+                          style={{ display: "inline-block", marginLeft: 8 }}
                         >
-                          Export
-                          <svg
-                            className="caret"
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="none"
+                          <button
+                            className="export-item"
+                            role="menuitem"
+                            onClick={() =>
+                              exportFull({
+                                sql: exportSql,
+                                kind: "csv",
+                                fallbackRows: msg.rows,
+                              })
+                            }
                           >
-                            <path
-                              d="M7 10l5 5 5-5"
-                              stroke="#111"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                            />
-                          </svg>
-                        </button>
-
-                        {openExportFor === i && (
-                          <div className="export-menu" role="menu">
-                            <button
-                              className="export-item"
-                              role="menuitem"
-                              onClick={() =>
-                                exportFull({
-                                  sql: exportSql,
-                                  kind: "csv",
-                                  fallbackRows: msg.rows,
-                                })
-                              }
-                            >
-                              Export as CSV
-                            </button>
-                            <button
-                              className="export-item"
-                              role="menuitem"
-                              onClick={() =>
-                                exportFull({
-                                  sql: exportSql,
-                                  kind: "json",
-                                  fallbackRows: msg.rows,
-                                })
-                              }
-                            >
-                              Export as JSON
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                            Export as CSV
+                          </button>
+                          <button
+                            className="export-item"
+                            role="menuitem"
+                            onClick={() =>
+                              exportFull({
+                                sql: exportSql,
+                                kind: "json",
+                                fallbackRows: msg.rows,
+                              })
+                            }
+                            style={{ marginLeft: 8 }}
+                          >
+                            Export as JSON
+                          </button>
+                        </div>
+                      )}
                     </div>
 
-                    {/* table */}
                     <table>
                       <thead>
                         <tr>

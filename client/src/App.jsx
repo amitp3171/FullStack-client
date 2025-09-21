@@ -1,22 +1,24 @@
 import React, { useState, useEffect } from "react";
+import { Routes, Route, useNavigate, useParams, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar.jsx";
 import SuggestionCards from "./components/SuggestionCards.jsx";
 import ChatArea from "./components/chatArea.jsx";
-import InputBar from "./components/inputBar.jsx";
+import InputBar from "./components/InputBar.jsx";
 import SideMenu from "./components/SideMenu.jsx";
+import Login from "./components/Login.jsx";
+import Register from "./components/Register.jsx";
 import "./styles/App.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
-const isQuestion = (s = "") => {
-  const t = s.trim().toLowerCase();
-  if (!t) return false;
-  if (t.endsWith("?")) return true;
-  return /^(what|how|where|when|which|who|show|list|give|return|find|count|display|get)\b/.test(
-    t
-  );
+// Helper: add session header if you later add auth middleware (optional)
+const authHeaders = (extra = {}) => {
+  const sessionId = localStorage.getItem("sessionId");
+  return sessionId ? { ...extra, "x-session-id": sessionId } : extra;
 };
 
+
+// Try to pull SQL out of a model response
 const extractSql = (s = "") => {
   if (!s) return "";
   const fenced = s.match(/```sql([\s\S]*?)```/i);
@@ -28,47 +30,110 @@ const extractSql = (s = "") => {
   return i >= 0 ? noFence.slice(i).trim() : "";
 };
 
-const App = () => {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [hasUserInteracted, setHasUserInteracted] = useState(false);
+/* -------------------------------
+   ProtectedRoute: Wrapper for authenticated routes
+--------------------------------- */
+function ProtectedRoute({ children, user }) {
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+}
+
+/* -------------------------------
+   ChatPage: a single conversation
+--------------------------------- */
+function ChatPage({ initialThreadId, user }) {
+  const { threadId: routeThreadId } = useParams(); // /c/:threadId
+  const navigate = useNavigate();
+
+  // State
+  const [threadId, setThreadId] = useState(routeThreadId || initialThreadId);
   const [messages, setMessages] = useState([]);
-  const [threadId, setThreadId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
 
-  // Fetch upload history from backend
+  // Upload + chat history
   const [uploadHistory, setUploadHistory] = useState([]);
+  const [chatList, setChatList] = useState([]);
 
-  // Load upload history from backend on component mount
+  // Sidebar vs modal
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [showChatHistory, setShowChatHistory] = useState(false);
+
+  const userId = localStorage.getItem("userId");
+
+  /* -------------------------------
+     Restore threadId from storage
+  --------------------------------- */
+  useEffect(() => {
+    if (!routeThreadId) {
+      const saved = sessionStorage.getItem("activeThreadId");
+      if (saved) setThreadId(saved);
+    }
+  }, [routeThreadId]);
+
+  // Persist threadId
+  useEffect(() => {
+    if (threadId) {
+      sessionStorage.setItem("activeThreadId", threadId);
+    }
+  }, [threadId]);
+
+  /* -------------------------------
+     Load upload history on mount
+  --------------------------------- */
   useEffect(() => {
     async function loadUploadHistory() {
       try {
-        const res = await fetch(`${API_BASE}/history/uploads`);
-        if (res.ok) {
-          const data = await res.json();
-          setUploadHistory(data);
-        }
-      } catch (error) {
-        console.error("Failed to load upload history:", error);
+        const res = await fetch(`${API_BASE}/history/uploads`, {
+          headers: authHeaders()
+        });
+        if (res.ok) setUploadHistory(await res.json());
+      } catch (err) {
+        console.error("Failed to load upload history:", err);
       }
     }
     loadUploadHistory();
   }, []);
 
+  /* -------------------------------
+     Append helpers
+  --------------------------------- */
   const appendBot = (text) =>
     setMessages((prev) => [...prev, { sender: "bot", text }]);
-
   const appendUser = (text) =>
     setMessages((prev) => [...prev, { sender: "user", text }]);
 
-  // Load messages from backend when threadId changes
+  /* -------------------------------
+     Load messages when threadId changes
+  --------------------------------- */
   useEffect(() => {
     if (!threadId) return;
     async function loadMessages() {
       try {
-        const res = await fetch(`${API_BASE}/messages/${threadId}`);
+        const res = await fetch(`${API_BASE}/messages/${threadId}`, {
+          headers: authHeaders()
+        });
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
-          setMessages(data);
+          // Only load from database on initial load or when changing threads
+          setMessages(prev => {
+            // If we already have messages and some are very recent (less than 10 seconds old),
+            // don't overwrite them to preserve download objects
+            const now = Date.now();
+            const hasRecentMessages = prev.some(msg => 
+              !msg.createdAt || (now - new Date(msg.createdAt).getTime()) < 10000
+            );
+            
+            if (hasRecentMessages && prev.length > 0) {
+              console.log("Preserving recent messages to keep download objects");
+              return prev;
+            }
+            
+            return data;
+          });
         }
       } catch (err) {
         console.error("Failed to load messages:", err);
@@ -77,7 +142,24 @@ const App = () => {
     loadMessages();
   }, [threadId]);
 
-  // inside App component
+  /* -------------------------------
+     Load chat list (per user)
+  --------------------------------- */
+  const loadChatList = async () => {
+    try {
+      const q = userId ? `?userId=${encodeURIComponent(userId)}` : "";
+      const res = await fetch(`${API_BASE}/chats${q}`, {
+        headers: authHeaders()
+      });
+      if (res.ok) setChatList(await res.json());
+    } catch (err) {
+      console.error("Failed to load chats:", err);
+    }
+  };
+
+  /* -------------------------------
+     Send message or upload
+  --------------------------------- */
   const handleSendMessage = async (text, file) => {
     if (!text?.trim() && !file) return;
     if (text?.trim()) appendUser(text);
@@ -103,9 +185,11 @@ const App = () => {
         formData.append("file", file);
         if (text?.trim()) formData.append("prompt", text);
         if (threadId) formData.append("threadId", threadId);
+        if (userId) formData.append("userId", userId); // 👈 NEW
 
         const response = await fetch(`${API_BASE}/upload`, {
           method: "POST",
+          headers: authHeaders(), // don't set Content-Type for FormData
           body: formData,
         });
 
@@ -143,229 +227,272 @@ const App = () => {
         // let the backend generate SQL DDL + create a temp file and hand back /download/:id
         const response = await fetch(`${API_BASE}/chat/flow`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ threadId, message: text }),
+          headers: authHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({ threadId, message: text, userId }), // 👈 NEW
         });
 
-        const result = await response.json();
-        if (result.threadId) setThreadId(result.threadId);
+      const result = await response.json();
 
-        if (result.download) {
-          const href = new URL(result.download.url, API_BASE).href;
-          setMessages((prev) => [
-            ...prev,
-            {
-              sender: "bot",
-              text: result.openai || "Your file is ready.",
-              download: { url: href, filename: result.download.filename },
-            },
-          ]);
-        } else if (result.openai || result.aiText) {
-          setMessages((prev) => [
-            ...prev,
-            { sender: "bot", text: result.openai || result.aiText },
-          ]);
-        }
-        return; // important: stop here so we don't run the classifier/sql flow
-      }
-
-      // ---------- INTENT CLASSIFY → QUESTION vs SQL REQUEST ----------
-      // ask the classifier
-      let label = "other";
-      try {
-        const clsRes = await fetch(`${API_BASE}/nlp/classify-intent`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: text }),
-        });
-        if (clsRes.ok) {
-          const cls = await clsRes.json();
-          label = cls.label; // "question" | "sql_request" | "other"
-        }
-      } catch {
-        label = "sql_request"; // fallback
-      }
-
-      if (label === "question") {
-        // Get a short explanation AND a clean SQL query
-        const [expRes, genRes] = await Promise.all([
-          fetch(`${API_BASE}/chat/flow`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ threadId, message: text }),
-          }),
-          fetch(`${API_BASE}/sql/generate`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ question: text }),
-          }),
+      // If server gives a download, show a clickable link bubble
+      if (result.download) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "bot",
+            text: result.openai || "",
+            download: result.download,
+          },
         ]);
+      } else if (result.openai) {
+        appendBot(result.openai);
+      }
 
-        let explanation = "";
+      if (result.threadId && result.threadId !== threadId) {
+        setThreadId(result.threadId);
+        navigate(`/c/${result.threadId}`);
+      }
+
+      if (file) setSelectedFile(null);
+
+      // refresh upload history
+      if (file && response.ok) {
         try {
-          const expJson = await expRes.json();
-          if (expJson.threadId) setThreadId(expJson.threadId);
-          const raw = expJson.openai || expJson.aiText || "";
-          explanation =
-            stripSqlBlock(raw) || "Here’s a query that answers your question.";
-        } catch {}
-
-        let sql = "";
-        try {
-          const genJson = await genRes.json();
-          sql = (genJson.sql || "").trim();
-        } catch {}
-
-        if (explanation) {
-          setMessages((prev) => [
-            ...prev,
-            { sender: "bot", text: explanation },
-          ]);
-        }
-        if (sql) {
-          setMessages((prev) => [
-            ...prev,
-            {
-              sender: "bot",
-              text: "```sql\n" + sql + "\n```",
-              allowEdit: false,
-            }, // Run-only
-          ]);
-        } else {
-          setMessages((prev) => [
-            ...prev,
-            { sender: "bot", text: "I couldn’t generate a query for that." },
-          ]);
-        }
-      } else {
-        // Not a question → generate SQL the user can Run + Edit
-        const genRes = await fetch(`${API_BASE}/sql/generate`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question: text }),
-        });
-        const genJson = await genRes.json();
-        const sql = (genJson.sql || "").trim();
-
-        if (sql) {
-          setMessages((prev) => [
-            ...prev,
-            {
-              sender: "bot",
-              text: "```sql\n" + sql + "\n```",
-              allowEdit: true,
-            },
-          ]);
-        } else {
-          setMessages((prev) => [
-            ...prev,
-            { sender: "bot", text: "Sorry, I couldn’t generate SQL for that." },
-          ]);
+          const res = await fetch(`${API_BASE}/history/uploads`, {
+            headers: authHeaders()
+          });
+          if (res.ok) setUploadHistory(await res.json());
+        } catch (err) {
+          console.error("Failed to refresh upload history:", err);
         }
       }
-    } catch (error) {
-      console.error("Chat error:", error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: "bot",
-          text: `Error: Could not get response. (${error.message})`,
-        },
-      ]);
+    } catch (err) {
+      appendBot(`Error: Could not get response. (${err.message})`);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Run SQL query (normal or edited)
-  // Run SQL query (normal or edited)
-  const handleRunQuery = async (sql, edited = false) => {
+  /* -------------------------------
+     Run SQL query with file context
+  --------------------------------- */
+  const handleRunQuery = async (sql, messageId, dbFileMessageId) => {
     try {
       setIsLoading(true);
-      const response = await fetch(`${API_BASE}/query/run`, {
+      
+      const res = await fetch(`${API_BASE}/query/run`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: sql, threadId, edited }),
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ 
+          query: sql, 
+          threadId, 
+          messageId,
+          dbFileMessageId // let backend choose best strategy
+        }),
       });
-      const result = await response.json();
+      
+      const result = await res.json();
 
       if (result.rows) {
-        setMessages((prev) => [
-          ...prev,
-          { sender: "bot", rows: result.rows, query: sql }, // <— keep SQL with rows
-        ]);
+        setMessages((prev) => [...prev, { 
+          sender: "bot", 
+          rows: result.rows,
+          foundVia: result.foundVia
+        }]);
       } else if (result.error) {
+        appendBot("Error running query: " + result.error);
+        if (result.debug) {
+          console.error("Query debug info:", result.debug);
+        }
+      }
+    } catch (err) {
+      appendBot("Error running query: " + err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  //------ handle QuickResult-------
+  const handleQuickResult = async (text, file) => {
+    if (!text?.trim() && !file) return;
+
+    appendUser(text);
+    setHasUserInteracted(true);
+
+    setIsLoading(true);
+    try {
+      const form = new FormData();
+      if (file) form.append("file", file);
+      form.append("prompt", text);
+      if (threadId) form.append("threadId", threadId);
+      if (userId) form.append("userId", userId); // 👈 NEW
+
+      const res = await fetch(`${API_BASE}/chat/quickresult`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: form,
+      });
+      const data = await res.json();
+
+      if (data.error) throw new Error(data.error);
+
+      if (data.threadId && data.threadId !== threadId) {
+        setThreadId(data.threadId);
+        navigate(`/c/${data.threadId}`);
+      }
+
+      if (data.rows) {
         setMessages((prev) => [
           ...prev,
-          { sender: "bot", text: "Error running query: " + result.error },
+          { sender: "bot", rows: data.rows, type: "result" },
         ]);
       }
     } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        { sender: "bot", text: "Error running query: " + err.message },
-      ]);
+      console.error("Quick result error:", err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Confirm SQL edit
+  /* -------------------------------
+     Confirm SQL edit
+  --------------------------------- */
   const handleConfirmEdit = (editedQuery, index) => {
-    // 1. Update bot bubble
     setMessages((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], text: editedQuery, edited: true };
       return updated;
     });
 
-    // edit the "text" field of the bot message at "index" in the database
     const updateMessageInDB = async () => {
       try {
         await fetch(`${API_BASE}/messages/${messages[index]._id}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({ text: editedQuery }),
         });
-      } catch (error) {
-        console.error("Failed to update message:", error);
+      } catch (err) {
+        console.error("Failed to update message:", err);
       }
     };
     updateMessageInDB();
   };
 
+  /* -------------------------------
+     Select file from history
+  --------------------------------- */
   const handleSelectHistory = async (item) => {
-    if (item.threadId) {
-      setThreadId(item.threadId);
-      appendBot(`Loaded context from **${item.name}**.`);
+    if (!item.id) {
+      appendBot("Error: Cannot use this history item (missing ID).");
+      return;
+    }
 
-      // Optionally download and process the file if needed
-      try {
-        const response = await fetch(`${API_BASE}/history/download/${item.id}`);
-        if (response.ok) {
-          console.log("File downloaded from history:", item.name);
-        }
-      } catch (error) {
-        console.error("Failed to download file:", error);
-      }
-    } else {
-      appendBot(`Selected **${item.name}** from history.`);
+    try {
+      setIsLoading(true);
+      const res = await fetch(`${API_BASE}/history/download/${item.id}`, {
+        headers: authHeaders()
+      });
+      if (!res.ok) throw new Error(`Server responded ${res.status}`);
+      const blob = await res.blob();
+      const file = new File([blob], item.name, { type: item.mimeType });
+      setSelectedFile(file);
+    } catch (err) {
+      appendBot(`Error using file from history: ${err.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  /* -------------------------------
+     Open a past chat
+  --------------------------------- */
+  const handleOpenChat = async (chat) => {
+    try {
+      const res = await fetch(`${API_BASE}/messages/${chat.threadId}`, {
+        headers: authHeaders()
+      });
+      if (res.ok) {
+        const msgs = await res.json();
+        setMessages(msgs);
+        setThreadId(chat.threadId);
+        navigate(`/c/${chat.threadId}`);
+        setShowChatHistory(false);
+      }
+    } catch (err) {
+      console.error("Failed to load chat:", err);
+    }
+  };
+
+  /* -------------------------------
+     New chat
+  --------------------------------- */
+  const handleNewChat = () => {
+    sessionStorage.removeItem("activeThreadId");
+    setThreadId(null);
+    setMessages([]);
+    setHasUserInteracted(false);
+    navigate("/");
+  };
+
+  /* -------------------------------
+     Logout
+  --------------------------------- */
+  const handleLogout = async () => {
+    const sessionId = localStorage.getItem("sessionId");
+    if (sessionId) {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      });
+    }
+    
+    // Clear all storage
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Reset state
+    setThreadId(null);
+    setMessages([]);
+    setHasUserInteracted(false);
+    setSelectedFile(null);
+    
+    navigate("/login");
+  };
+
+  /* -------------------------------
+     Render
+  --------------------------------- */
   return (
     <div className="app-container">
-      <Navbar onMenuToggle={() => setMenuOpen(!menuOpen)} />
+      <Navbar onMenuToggle={() => setMenuOpen(!menuOpen)} onNewChat={handleNewChat} />
 
-      {/* Always render the sidebar */}
-      <SideMenu open={menuOpen} onToggle={() => setMenuOpen(!menuOpen)} />
+      <SideMenu
+      
+        open={menuOpen}
+        onToggle={() => setMenuOpen(!menuOpen)}
+        onOpenHistory={() => {
+          loadChatList();
+          setShowChatHistory(true);
+        }}
+        onLogout={handleLogout}
+      />
+      {!menuOpen && (
+        <button
+          className="sm-avatar-peek"
+          onClick={() => setMenuOpen(true)}
+          title={(localStorage.getItem("username") || "User")}
+          aria-label="Open menu"
+        >
+          <span className="sm-avatar-peek-bubble">
+            {((localStorage.getItem("username") || "U")[0] || "U").toUpperCase()}
+          </span>
+        </button>
+      )}
 
       <div className="main-section">
-        {!hasUserInteracted && (
+        {!hasUserInteracted && !threadId && (
           <div className="suggestion-overlay">
-            <SuggestionCards
-              onSuggestionClick={(text) => handleSendMessage(text, null)}
-            />
+            <SuggestionCards onSuggestionClick={(text) => handleSendMessage(text, null)} />
           </div>
         )}
 
@@ -379,11 +506,82 @@ const App = () => {
 
       <InputBar
         onSend={handleSendMessage}
+        onQuickResult={handleQuickResult}
         history={uploadHistory}
         onSelectHistory={handleSelectHistory}
         isLoading={isLoading}
+        selectedFile={selectedFile}
+        onFileSelect={setSelectedFile}
       />
+
+      {/* Chat history modal */}
+      {showChatHistory && (
+        <div className="modal-overlay" onClick={() => setShowChatHistory(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Past Chats</h3>
+              <button className="icon-btn" onClick={() => setShowChatHistory(false)}>✕</button>
+            </div>
+            {chatList.length === 0 ? (
+              <p className="muted">No chats yet.</p>
+            ) : (
+              <ul className="history-list">
+                {chatList.map((chat) => (
+                  <li key={chat._id} className="history-row">
+                    <div className="history-meta">
+                      <div className="history-name">{chat.title || "Untitled Chat"}</div>
+                      <div className="history-sub">{new Date(chat.updatedAt).toLocaleString()}</div>
+                    </div>
+                    <button className="btn btn-small" onClick={() => handleOpenChat(chat)}>
+                      Open
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+/* -------------------------------
+   Top-level App: routing + auth
+--------------------------------- */
+const App = () => {
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem("username");
+    return saved ? { username: saved } : null;
+  });
+
+  return (
+    <Routes>
+      {/* Auth routes - accessible when not logged in */}
+      <Route path="/login" element={<Login onAuthSuccess={(userData) => setUser(userData)} />} />
+      <Route path="/register" element={<Register />} />
+      
+      {/* Protected routes - require authentication */}
+      <Route 
+        path="/" 
+        element={
+          <ProtectedRoute user={user}>
+            <ChatPage initialThreadId={null} user={user} />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/c/:threadId" 
+        element={
+          <ProtectedRoute user={user}>
+            <ChatPage user={user} />
+          </ProtectedRoute>
+        } 
+      />
+      
+      {/* Catch-all redirect */}
+      <Route path="*" element={<Navigate to={user ? "/" : "/login"} replace />} />
+    </Routes>
   );
 };
 
