@@ -57,15 +57,43 @@ const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
                 {/* Inline download link, if present */}
                 {msg.download ? (
                   <div className="download-inline">
-                    Your file is ready,{" "}
-                    <a
-                      className="file-link"
-                      href={msg.download.url}
-                      download={msg.download.filename}
-                    >
-                      {msg.download.filename}
-                    </a>
-                    .
+                    {msg.text ? (
+                      <div className="message-text">
+                        {msg.text.replace(/\*\*(.*?)\*\*/g, '$1')}
+                      </div>
+                    ) : (
+                      <>
+                        Your file is ready,{" "}
+                        <a
+                          className="file-link"
+                          href={msg.download.url}
+                          download={msg.download.filename}
+                        >
+                          {msg.download.filename}
+                        </a>
+                        .
+                      </>
+                    )}
+                    {msg.text && (
+                      <div style={{ marginTop: '10px' }}>
+                        <a
+                          className="file-link"
+                          href={msg.download.url}
+                          download={msg.download.filename}
+                          style={{
+                            display: 'inline-block',
+                            padding: '8px 16px',
+                            backgroundColor: '#007bff',
+                            color: 'white',
+                            textDecoration: 'none',
+                            borderRadius: '4px',
+                            fontSize: '14px'
+                          }}
+                        >
+                          Download {msg.download.filename}
+                        </a>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <>
