@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Routes, Route, useNavigate, useParams, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar.jsx";
 import SuggestionCards from "./components/SuggestionCards.jsx";
-import ChatArea from "./components/ChatArea.jsx";
+import ChatArea from "./components/chatArea.jsx";
 import InputBar from "./components/InputBar.jsx";
 import SideMenu from "./components/SideMenu.jsx";
 import Login from "./components/Login.jsx";
