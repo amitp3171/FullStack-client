@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Routes, Route, useNavigate, useParams, Navigate } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  useNavigate,
+  useParams,
+  Navigate,
+} from "react-router-dom";
 import Navbar from "./components/Navbar.jsx";
 import SuggestionCards from "./components/SuggestionCards.jsx";
 import ChatArea from "./components/chatArea.jsx";
@@ -16,7 +22,6 @@ const authHeaders = (extra = {}) => {
   const sessionId = localStorage.getItem("sessionId");
   return sessionId ? { ...extra, "x-session-id": sessionId } : extra;
 };
-
 
 // Try to pull SQL out of a model response
 const extractSql = (s = "") => {
@@ -88,7 +93,7 @@ function ChatPage({ initialThreadId, user }) {
     async function loadUploadHistory() {
       try {
         const res = await fetch(`${API_BASE}/history/uploads`, {
-          headers: authHeaders()
+          headers: authHeaders(),
         });
         if (res.ok) setUploadHistory(await res.json());
       } catch (err) {
@@ -114,24 +119,28 @@ function ChatPage({ initialThreadId, user }) {
     async function loadMessages() {
       try {
         const res = await fetch(`${API_BASE}/messages/${threadId}`, {
-          headers: authHeaders()
+          headers: authHeaders(),
         });
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
           // Only load from database on initial load or when changing threads
-          setMessages(prev => {
+          setMessages((prev) => {
             // If we already have messages and some are very recent (less than 10 seconds old),
             // don't overwrite them to preserve download objects
             const now = Date.now();
-            const hasRecentMessages = prev.some(msg => 
-              !msg.createdAt || (now - new Date(msg.createdAt).getTime()) < 10000
+            const hasRecentMessages = prev.some(
+              (msg) =>
+                !msg.createdAt ||
+                now - new Date(msg.createdAt).getTime() < 10000
             );
-            
+
             if (hasRecentMessages && prev.length > 0) {
-              console.log("Preserving recent messages to keep download objects");
+              console.log(
+                "Preserving recent messages to keep download objects"
+              );
               return prev;
             }
-            
+
             return data;
           });
         }
@@ -149,7 +158,7 @@ function ChatPage({ initialThreadId, user }) {
     try {
       const q = userId ? `?userId=${encodeURIComponent(userId)}` : "";
       const res = await fetch(`${API_BASE}/chats${q}`, {
-        headers: authHeaders()
+        headers: authHeaders(),
       });
       if (res.ok) setChatList(await res.json());
     } catch (err) {
@@ -165,21 +174,10 @@ function ChatPage({ initialThreadId, user }) {
     if (text?.trim()) appendUser(text);
     setHasUserInteracted(true);
 
-    // helpers
-    const stripSqlBlock = (s = "") =>
-      s.replace(/```sql[\s\S]*?```/gi, "").trim();
-    const looksLikeSchema =
-      typeof text === "string" &&
-      /Tables?:/i.test(text) &&
-      /-\s*\w+/.test(text);
-    const asksForDbFile =
-      typeof text === "string" &&
-      /\b(build|create|generate|make)\b.*\b(database|db|file)\b/i.test(text);
-
     try {
       setIsLoading(true);
+      let response;
 
-      // ---------- FILE UPLOAD (unchanged) ----------
       if (file) {
         const formData = new FormData();
         formData.append("file", file);
@@ -187,49 +185,18 @@ function ChatPage({ initialThreadId, user }) {
         if (threadId) formData.append("threadId", threadId);
         if (userId) formData.append("userId", userId); // 👈 NEW
 
-        const response = await fetch(`${API_BASE}/upload`, {
+        response = await fetch(`${API_BASE}/upload`, {
           method: "POST",
           headers: authHeaders(), // don't set Content-Type for FormData
           body: formData,
         });
-
-        const result = await response.json();
-        if (result.threadId) setThreadId(result.threadId);
-
-        if (result.download) {
-          const href = new URL(result.download.url, API_BASE).href;
-          setMessages((prev) => [
-            ...prev,
-            {
-              sender: "bot",
-              download: { url: href, filename: result.download.filename },
-            },
-          ]);
-        } else if (result.openai) {
-          setMessages((prev) => [
-            ...prev,
-            { sender: "bot", text: result.openai },
-          ]);
-        }
-
-        // refresh upload history (optional)
-        if (response.ok) {
-          try {
-            const res = await fetch(`${API_BASE}/history/uploads`);
-            if (res.ok) setUploadHistory(await res.json());
-          } catch {}
-        }
-        return;
-      }
-
-      // ---------- FAST-PATH: “build database file … Tables: …” ----------
-      if (asksForDbFile && looksLikeSchema) {
-        // let the backend generate SQL DDL + create a temp file and hand back /download/:id
-        const response = await fetch(`${API_BASE}/chat/flow`, {
+      } else {
+        response = await fetch(`${API_BASE}/chat/flow`, {
           method: "POST",
           headers: authHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({ threadId, message: text, userId }), // 👈 NEW
         });
+      }
 
       const result = await response.json();
 
@@ -258,7 +225,7 @@ function ChatPage({ initialThreadId, user }) {
       if (file && response.ok) {
         try {
           const res = await fetch(`${API_BASE}/history/uploads`, {
-            headers: authHeaders()
+            headers: authHeaders(),
           });
           if (res.ok) setUploadHistory(await res.json());
         } catch (err) {
@@ -278,26 +245,29 @@ function ChatPage({ initialThreadId, user }) {
   const handleRunQuery = async (sql, messageId, dbFileMessageId) => {
     try {
       setIsLoading(true);
-      
+
       const res = await fetch(`${API_BASE}/query/run`, {
         method: "POST",
         headers: authHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify({ 
-          query: sql, 
-          threadId, 
+        body: JSON.stringify({
+          query: sql,
+          threadId,
           messageId,
-          dbFileMessageId // let backend choose best strategy
+          dbFileMessageId, // let backend choose best strategy
         }),
       });
-      
+
       const result = await res.json();
 
       if (result.rows) {
-        setMessages((prev) => [...prev, { 
-          sender: "bot", 
-          rows: result.rows,
-          foundVia: result.foundVia
-        }]);
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "bot",
+            rows: result.rows,
+            foundVia: result.foundVia,
+          },
+        ]);
       } else if (result.error) {
         appendBot("Error running query: " + result.error);
         if (result.debug) {
@@ -389,7 +359,7 @@ function ChatPage({ initialThreadId, user }) {
     try {
       setIsLoading(true);
       const res = await fetch(`${API_BASE}/history/download/${item.id}`, {
-        headers: authHeaders()
+        headers: authHeaders(),
       });
       if (!res.ok) throw new Error(`Server responded ${res.status}`);
       const blob = await res.blob();
@@ -408,7 +378,7 @@ function ChatPage({ initialThreadId, user }) {
   const handleOpenChat = async (chat) => {
     try {
       const res = await fetch(`${API_BASE}/messages/${chat.threadId}`, {
-        headers: authHeaders()
+        headers: authHeaders(),
       });
       if (res.ok) {
         const msgs = await res.json();
@@ -445,17 +415,17 @@ function ChatPage({ initialThreadId, user }) {
         body: JSON.stringify({ sessionId }),
       });
     }
-    
+
     // Clear all storage
     localStorage.clear();
     sessionStorage.clear();
-    
+
     // Reset state
     setThreadId(null);
     setMessages([]);
     setHasUserInteracted(false);
     setSelectedFile(null);
-    
+
     navigate("/login");
   };
 
@@ -464,10 +434,12 @@ function ChatPage({ initialThreadId, user }) {
   --------------------------------- */
   return (
     <div className="app-container">
-      <Navbar onMenuToggle={() => setMenuOpen(!menuOpen)} onNewChat={handleNewChat} />
+      <Navbar
+        onMenuToggle={() => setMenuOpen(!menuOpen)}
+        onNewChat={handleNewChat}
+      />
 
       <SideMenu
-      
         open={menuOpen}
         onToggle={() => setMenuOpen(!menuOpen)}
         onOpenHistory={() => {
@@ -480,11 +452,13 @@ function ChatPage({ initialThreadId, user }) {
         <button
           className="sm-avatar-peek"
           onClick={() => setMenuOpen(true)}
-          title={(localStorage.getItem("username") || "User")}
+          title={localStorage.getItem("username") || "User"}
           aria-label="Open menu"
         >
           <span className="sm-avatar-peek-bubble">
-            {((localStorage.getItem("username") || "U")[0] || "U").toUpperCase()}
+            {(
+              (localStorage.getItem("username") || "U")[0] || "U"
+            ).toUpperCase()}
           </span>
         </button>
       )}
@@ -492,7 +466,9 @@ function ChatPage({ initialThreadId, user }) {
       <div className="main-section">
         {!hasUserInteracted && !threadId && (
           <div className="suggestion-overlay">
-            <SuggestionCards onSuggestionClick={(text) => handleSendMessage(text, null)} />
+            <SuggestionCards
+              onSuggestionClick={(text) => handleSendMessage(text, null)}
+            />
           </div>
         )}
 
@@ -516,11 +492,19 @@ function ChatPage({ initialThreadId, user }) {
 
       {/* Chat history modal */}
       {showChatHistory && (
-        <div className="modal-overlay" onClick={() => setShowChatHistory(false)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setShowChatHistory(false)}
+        >
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Past Chats</h3>
-              <button className="icon-btn" onClick={() => setShowChatHistory(false)}>✕</button>
+              <button
+                className="icon-btn"
+                onClick={() => setShowChatHistory(false)}
+              >
+                ✕
+              </button>
             </div>
             {chatList.length === 0 ? (
               <p className="muted">No chats yet.</p>
@@ -529,10 +513,17 @@ function ChatPage({ initialThreadId, user }) {
                 {chatList.map((chat) => (
                   <li key={chat._id} className="history-row">
                     <div className="history-meta">
-                      <div className="history-name">{chat.title || "Untitled Chat"}</div>
-                      <div className="history-sub">{new Date(chat.updatedAt).toLocaleString()}</div>
+                      <div className="history-name">
+                        {chat.title || "Untitled Chat"}
+                      </div>
+                      <div className="history-sub">
+                        {new Date(chat.updatedAt).toLocaleString()}
+                      </div>
                     </div>
-                    <button className="btn btn-small" onClick={() => handleOpenChat(chat)}>
+                    <button
+                      className="btn btn-small"
+                      onClick={() => handleOpenChat(chat)}
+                    >
                       Open
                     </button>
                   </li>
@@ -558,29 +549,35 @@ const App = () => {
   return (
     <Routes>
       {/* Auth routes - accessible when not logged in */}
-      <Route path="/login" element={<Login onAuthSuccess={(userData) => setUser(userData)} />} />
+      <Route
+        path="/login"
+        element={<Login onAuthSuccess={(userData) => setUser(userData)} />}
+      />
       <Route path="/register" element={<Register />} />
-      
+
       {/* Protected routes - require authentication */}
-      <Route 
-        path="/" 
+      <Route
+        path="/"
         element={
           <ProtectedRoute user={user}>
             <ChatPage initialThreadId={null} user={user} />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/c/:threadId" 
+      <Route
+        path="/c/:threadId"
         element={
           <ProtectedRoute user={user}>
             <ChatPage user={user} />
           </ProtectedRoute>
-        } 
+        }
       />
-      
+
       {/* Catch-all redirect */}
-      <Route path="*" element={<Navigate to={user ? "/" : "/login"} replace />} />
+      <Route
+        path="*"
+        element={<Navigate to={user ? "/" : "/login"} replace />}
+      />
     </Routes>
   );
 };

@@ -11,17 +11,14 @@
   overflow: hidden;
 }
 
-/* src/styles/App.css */
 .main-section {
   flex: 1;
   align-items: center;
   position: relative;
-  /* was: overflow-y: auto; */
-  overflow-y: hidden;        /* let ChatArea own the scroll */
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
 }
-
 
 .suggestion-overlay {
   position: absolute;
@@ -66,5 +63,3 @@
 .cancel-btn:hover {
   background: #888;
 }
-
-
