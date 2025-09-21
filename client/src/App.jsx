@@ -83,10 +83,12 @@ function ChatPage({ initialThreadId, user }) {
   /* -------------------------------
      Load upload history on mount
   --------------------------------- */
-  useEffect(() => {
+   useEffect(() => {
     async function loadUploadHistory() {
       try {
-        const res = await fetch(`${API_BASE}/history/uploads`, {
+        const uid = localStorage.getItem("userId");
+        const q = uid ? `?userId=${encodeURIComponent(uid)}` : "";
+        const res = await fetch(`${API_BASE}/history/uploads${q}`, {
           headers: authHeaders()
         });
         if (res.ok) setUploadHistory(await res.json());
@@ -96,6 +98,7 @@ function ChatPage({ initialThreadId, user }) {
     }
     loadUploadHistory();
   }, []);
+
 
   /* -------------------------------
      Append helpers
@@ -183,16 +186,18 @@ function ChatPage({ initialThreadId, user }) {
       if (file) setSelectedFile(null);
 
       // refresh upload history
-      if (file && response.ok) {
-        try {
-          const res = await fetch(`${API_BASE}/history/uploads`, {
-            headers: authHeaders()
-          });
-          if (res.ok) setUploadHistory(await res.json());
-        } catch (err) {
-          console.error("Failed to refresh upload history:", err);
-        }
+     if (file && response.ok) {
+      try {
+        const uid = localStorage.getItem("userId");
+        const q = uid ? `?userId=${encodeURIComponent(uid)}` : "";
+        const res = await fetch(`${API_BASE}/history/uploads${q}`, {
+          headers: authHeaders()
+        });
+        if (res.ok) setUploadHistory(await res.json());
+      } catch (err) {
+        console.error("Failed to refresh upload history:", err);
       }
+  }
     } catch (err) {
       appendBot(`Error: Could not get response. (${err.message})`);
     } finally {
@@ -240,46 +245,60 @@ function ChatPage({ initialThreadId, user }) {
   };
 
   //------ handle QuickResult-------
-  const handleQuickResult = async (text, file) => {
-    if (!text?.trim() && !file) return;
+const handleQuickResult = async (text, file) => {
+  if (!text?.trim() && !file) return;
 
-    appendUser(text);
-    setHasUserInteracted(true);
+  appendUser(text);
+  setHasUserInteracted(true);
 
-    setIsLoading(true);
-    try {
-      const form = new FormData();
-      if (file) form.append("file", file);
-      form.append("prompt", text);
-      if (threadId) form.append("threadId", threadId);
-      if (userId) form.append("userId", userId); // 👈 NEW
+  setIsLoading(true);
+  try {
+    const form = new FormData();
+    if (file) form.append("file", file);
+    form.append("prompt", text);
+    if (threadId) form.append("threadId", threadId);
+    if (userId) form.append("userId", userId);
 
-      const res = await fetch(`${API_BASE}/chat/quickresult`, {
-        method: "POST",
-        headers: authHeaders(),
-        body: form,
-      });
-      const data = await res.json();
+    const res = await fetch(`${API_BASE}/chat/quickresult`, {
+      method: "POST",
+      headers: authHeaders(), // ok: only adds x-session-id; FormData sets content-type
+      body: form,
+    });
+    const data = await res.json();
 
-      if (data.error) throw new Error(data.error);
+    if (data.error) throw new Error(data.error);
 
-      if (data.threadId && data.threadId !== threadId) {
-        setThreadId(data.threadId);
-        navigate(`/c/${data.threadId}`);
-      }
-
-      if (data.rows) {
-        setMessages((prev) => [
-          ...prev,
-          { sender: "bot", rows: data.rows, type: "result" },
-        ]);
-      }
-    } catch (err) {
-      console.error("Quick result error:", err);
-    } finally {
-      setIsLoading(false);
+    if (data.threadId && data.threadId !== threadId) {
+      setThreadId(data.threadId);
+      navigate(`/c/${data.threadId}`);
     }
-  };
+
+    if (data.rows) {
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", rows: data.rows, type: "result" },
+      ]);
+    }
+
+    // 👇 NEW: refresh the per-user upload history right after a successful file upload
+    if (file) {
+      try {
+        const uid = localStorage.getItem("userId");
+        const q = uid ? `?userId=${encodeURIComponent(uid)}` : "";
+        const histRes = await fetch(`${API_BASE}/history/uploads${q}`, {
+          headers: authHeaders(),
+        });
+        if (histRes.ok) setUploadHistory(await histRes.json());
+      } catch (e) {
+        console.error("Failed to refresh upload history:", e);
+      }
+    }
+  } catch (err) {
+    console.error("Quick result error:", err);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   /* -------------------------------
      Confirm SQL edit
@@ -308,7 +327,7 @@ function ChatPage({ initialThreadId, user }) {
   /* -------------------------------
      Select file from history
   --------------------------------- */
-  const handleSelectHistory = async (item) => {
+    const handleSelectHistory = async (item) => {
     if (!item.id) {
       appendBot("Error: Cannot use this history item (missing ID).");
       return;
@@ -316,7 +335,9 @@ function ChatPage({ initialThreadId, user }) {
 
     try {
       setIsLoading(true);
-      const res = await fetch(`${API_BASE}/history/download/${item.id}`, {
+      const uid = localStorage.getItem("userId");
+      const q = uid ? `?userId=${encodeURIComponent(uid)}` : "";
+      const res = await fetch(`${API_BASE}/history/download/${item.id}${q}`, {
         headers: authHeaders()
       });
       if (!res.ok) throw new Error(`Server responded ${res.status}`);
@@ -329,6 +350,7 @@ function ChatPage({ initialThreadId, user }) {
       setIsLoading(false);
     }
   };
+
 
   /* -------------------------------
      Open a past chat
