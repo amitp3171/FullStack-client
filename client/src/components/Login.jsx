@@ -5,7 +5,7 @@ import "../styles/Login.css";
 const API_BASE = import.meta.env.VITE_API_BASE;
 
 export default function Login({ onAuthSuccess }) {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState(""); // email OR username
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -13,11 +13,10 @@ export default function Login({ onAuthSuccess }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Check for success message from registration
+  // surface success message from register page
   useEffect(() => {
     if (location.state?.message) {
       setSuccess(location.state.message);
-      // Clear the state so it doesn't persist on refresh
       navigate("/login", { replace: true });
     }
   }, [location.state, navigate]);
@@ -31,7 +30,7 @@ export default function Login({ onAuthSuccess }) {
       const res = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ identifier, password }), // <—
       });
 
       const data = await res.json();
@@ -39,10 +38,10 @@ export default function Login({ onAuthSuccess }) {
 
       localStorage.setItem("sessionId", data.sessionId);
       localStorage.setItem("username", data.user.username);
-      localStorage.setItem("userId", data.user.id); // 👈 NEW
+      localStorage.setItem("userId", data.user.id);
 
-      onAuthSuccess(data.user);
-      navigate("/"); // Navigate to home page
+      onAuthSuccess?.(data.user);
+      navigate("/");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -54,14 +53,16 @@ export default function Login({ onAuthSuccess }) {
     <div className="auth-container">
       <div className="auth-card login">
         <h2>Login</h2>
+
         <form onSubmit={handleSubmit}>
           <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            placeholder="Email or username"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
             required
             disabled={isLoading}
+            autoComplete="username"
           />
           <input
             type="password"
@@ -70,6 +71,7 @@ export default function Login({ onAuthSuccess }) {
             onChange={(e) => setPassword(e.target.value)}
             required
             disabled={isLoading}
+            autoComplete="current-password"
           />
           <button type="submit" disabled={isLoading}>
             {isLoading ? "Logging in..." : "Login"}
@@ -77,8 +79,7 @@ export default function Login({ onAuthSuccess }) {
         </form>
 
         <p>
-          Don't have an account?{" "}
-          <Link to="/register">Register here</Link>
+          Don&apos;t have an account? <Link to="/register">Register here</Link>
         </p>
 
         {success && <p className="success">{success}</p>}
