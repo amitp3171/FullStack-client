@@ -425,6 +425,7 @@ function ChatPage({ initialThreadId, user }) {
       <Navbar onMenuToggle={() => setMenuOpen(!menuOpen)} onNewChat={handleNewChat} />
 
       <SideMenu
+      
         open={menuOpen}
         onToggle={() => setMenuOpen(!menuOpen)}
         onOpenHistory={() => {
@@ -433,6 +434,18 @@ function ChatPage({ initialThreadId, user }) {
         }}
         onLogout={handleLogout}
       />
+      {!menuOpen && (
+        <button
+          className="sm-avatar-peek"
+          onClick={() => setMenuOpen(true)}
+          title={(localStorage.getItem("username") || "User")}
+          aria-label="Open menu"
+        >
+          <span className="sm-avatar-peek-bubble">
+            {((localStorage.getItem("username") || "U")[0] || "U").toUpperCase()}
+          </span>
+        </button>
+      )}
 
       <div className="main-section">
         {!hasUserInteracted && !threadId && (
