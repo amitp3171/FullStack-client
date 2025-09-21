@@ -11,14 +11,17 @@ import "./styles/App.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
+// Helper: add session header if you later add auth middleware (optional)
+const authHeaders = (extra = {}) => {
+  const sessionId = localStorage.getItem("sessionId");
+  return sessionId ? { ...extra, "x-session-id": sessionId } : extra;
+};
+
 // Try to pull SQL out of a model response
 const extractSql = (s = "") => {
   if (!s) return "";
-  // Prefer fenced ```sql blocks
   const fenced = s.match(/```sql([\s\S]*?)```/i);
   if (fenced) return fenced[1].trim();
-
-  // Fallback: first SQL-ish keyword onward
   const noFence = s.replace(/```/g, "").trim();
   const i = noFence
     .toLowerCase()
@@ -58,6 +61,8 @@ function ChatPage({ initialThreadId, user }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showChatHistory, setShowChatHistory] = useState(false);
 
+  const userId = localStorage.getItem("userId");
+
   /* -------------------------------
      Restore threadId from storage
   --------------------------------- */
@@ -81,7 +86,9 @@ function ChatPage({ initialThreadId, user }) {
   useEffect(() => {
     async function loadUploadHistory() {
       try {
-        const res = await fetch(`${API_BASE}/history/uploads`);
+        const res = await fetch(`${API_BASE}/history/uploads`, {
+          headers: authHeaders()
+        });
         if (res.ok) setUploadHistory(await res.json());
       } catch (err) {
         console.error("Failed to load upload history:", err);
@@ -105,7 +112,9 @@ function ChatPage({ initialThreadId, user }) {
     if (!threadId) return;
     async function loadMessages() {
       try {
-        const res = await fetch(`${API_BASE}/messages/${threadId}`);
+        const res = await fetch(`${API_BASE}/messages/${threadId}`, {
+          headers: authHeaders()
+        });
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) setMessages(data);
       } catch (err) {
@@ -116,11 +125,14 @@ function ChatPage({ initialThreadId, user }) {
   }, [threadId]);
 
   /* -------------------------------
-     Load chat list
+     Load chat list (per user)
   --------------------------------- */
   const loadChatList = async () => {
     try {
-      const res = await fetch(`${API_BASE}/chats`);
+      const q = userId ? `?userId=${encodeURIComponent(userId)}` : "";
+      const res = await fetch(`${API_BASE}/chats${q}`, {
+        headers: authHeaders()
+      });
       if (res.ok) setChatList(await res.json());
     } catch (err) {
       console.error("Failed to load chats:", err);
@@ -144,16 +156,18 @@ function ChatPage({ initialThreadId, user }) {
         formData.append("file", file);
         if (text?.trim()) formData.append("prompt", text);
         if (threadId) formData.append("threadId", threadId);
+        if (userId) formData.append("userId", userId); // 👈 NEW
 
         response = await fetch(`${API_BASE}/upload`, {
           method: "POST",
+          headers: authHeaders(), // don't set Content-Type for FormData
           body: formData,
         });
       } else {
         response = await fetch(`${API_BASE}/chat/flow`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ threadId, message: text }),
+          headers: authHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({ threadId, message: text, userId }), // 👈 NEW
         });
       }
 
@@ -171,7 +185,9 @@ function ChatPage({ initialThreadId, user }) {
       // refresh upload history
       if (file && response.ok) {
         try {
-          const res = await fetch(`${API_BASE}/history/uploads`);
+          const res = await fetch(`${API_BASE}/history/uploads`, {
+            headers: authHeaders()
+          });
           if (res.ok) setUploadHistory(await res.json());
         } catch (err) {
           console.error("Failed to refresh upload history:", err);
@@ -191,16 +207,14 @@ function ChatPage({ initialThreadId, user }) {
     try {
       setIsLoading(true);
       
-      console.log("Running query with:", { sql, messageId, dbFileMessageId, threadId });
-      
       const res = await fetch(`${API_BASE}/query/run`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ 
           query: sql, 
           threadId, 
           messageId,
-          dbFileMessageId // Pass both IDs - let backend choose the best strategy
+          dbFileMessageId // let backend choose best strategy
         }),
       });
       
@@ -210,12 +224,10 @@ function ChatPage({ initialThreadId, user }) {
         setMessages((prev) => [...prev, { 
           sender: "bot", 
           rows: result.rows,
-          foundVia: result.foundVia // Add this for debugging
+          foundVia: result.foundVia
         }]);
       } else if (result.error) {
         appendBot("Error running query: " + result.error);
-        
-        // If it's a debug error, show more helpful information
         if (result.debug) {
           console.error("Query debug info:", result.debug);
         }
@@ -228,45 +240,46 @@ function ChatPage({ initialThreadId, user }) {
   };
 
   //------ handle QuickResult-------
- const handleQuickResult = async (text, file) => {
-  if (!text?.trim() && !file) return;
+  const handleQuickResult = async (text, file) => {
+    if (!text?.trim() && !file) return;
 
-  appendUser(text);         // 👈 still append the user message
-  setHasUserInteracted(true); // 👈 hide suggestions immediately
+    appendUser(text);
+    setHasUserInteracted(true);
 
-  setIsLoading(true);
-  try {
-    const form = new FormData();
-    if (file) form.append("file", file);
-    form.append("prompt", text);
-    if (threadId) form.append("threadId", threadId);
+    setIsLoading(true);
+    try {
+      const form = new FormData();
+      if (file) form.append("file", file);
+      form.append("prompt", text);
+      if (threadId) form.append("threadId", threadId);
+      if (userId) form.append("userId", userId); // 👈 NEW
 
-    const res = await fetch(`${API_BASE}/chat/quickresult`, {
-      method: "POST",
-      body: form,
-    });
-    const data = await res.json();
+      const res = await fetch(`${API_BASE}/chat/quickresult`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: form,
+      });
+      const data = await res.json();
 
-    if (data.error) throw new Error(data.error);
+      if (data.error) throw new Error(data.error);
 
-    if (data.threadId && data.threadId !== threadId) {
-      setThreadId(data.threadId);
-      navigate(`/c/${data.threadId}`);
+      if (data.threadId && data.threadId !== threadId) {
+        setThreadId(data.threadId);
+        navigate(`/c/${data.threadId}`);
+      }
+
+      if (data.rows) {
+        setMessages((prev) => [
+          ...prev,
+          { sender: "bot", rows: data.rows, type: "result" },
+        ]);
+      }
+    } catch (err) {
+      console.error("Quick result error:", err);
+    } finally {
+      setIsLoading(false);
     }
-
-    // append result only
-    if (data.rows) {
-      setMessages((prev) => [
-        ...prev,
-        { sender: "bot", rows: data.rows, type: "result" },
-      ]);
-    }
-  } catch (err) {
-    console.error("Quick result error:", err);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   /* -------------------------------
      Confirm SQL edit
@@ -282,7 +295,7 @@ function ChatPage({ initialThreadId, user }) {
       try {
         await fetch(`${API_BASE}/messages/${messages[index]._id}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({ text: editedQuery }),
         });
       } catch (err) {
@@ -303,7 +316,9 @@ function ChatPage({ initialThreadId, user }) {
 
     try {
       setIsLoading(true);
-      const res = await fetch(`${API_BASE}/history/download/${item.id}`);
+      const res = await fetch(`${API_BASE}/history/download/${item.id}`, {
+        headers: authHeaders()
+      });
       if (!res.ok) throw new Error(`Server responded ${res.status}`);
       const blob = await res.blob();
       const file = new File([blob], item.name, { type: item.mimeType });
@@ -320,7 +335,9 @@ function ChatPage({ initialThreadId, user }) {
   --------------------------------- */
   const handleOpenChat = async (chat) => {
     try {
-      const res = await fetch(`${API_BASE}/messages/${chat.threadId}`);
+      const res = await fetch(`${API_BASE}/messages/${chat.threadId}`, {
+        headers: authHeaders()
+      });
       if (res.ok) {
         const msgs = await res.json();
         setMessages(msgs);
@@ -361,7 +378,7 @@ function ChatPage({ initialThreadId, user }) {
     localStorage.clear();
     sessionStorage.clear();
     
-    // Reset component state to ensure clean slate
+    // Reset state
     setThreadId(null);
     setMessages([]);
     setHasUserInteracted(false);
@@ -404,7 +421,7 @@ function ChatPage({ initialThreadId, user }) {
 
       <InputBar
         onSend={handleSendMessage}
-        onQuickResult={handleQuickResult} 
+        onQuickResult={handleQuickResult}
         history={uploadHistory}
         onSelectHistory={handleSelectHistory}
         isLoading={isLoading}

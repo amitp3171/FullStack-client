@@ -39,6 +39,7 @@ export default function Login({ onAuthSuccess }) {
 
       localStorage.setItem("sessionId", data.sessionId);
       localStorage.setItem("username", data.user.username);
+      localStorage.setItem("userId", data.user.id); // 👈 NEW
 
       onAuthSuccess(data.user);
       navigate("/"); // Navigate to home page
