@@ -1,128 +1,190 @@
-/* ================= Login Form ================= */
+/* ====== Split Login Layout (full-bleed background) ====== */
+:root {
+  /* Use any image you like here */
+  --login-hero: url("https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=1600&auto=format&fit=crop");
+  --brand: #e35d17;
+  --brand-hover: #c04c12;
+  --ink: #0f172a;
+  --muted: #6b7280;
+  --ring: rgba(37, 99, 235, .25);
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-  Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  background: linear-gradient(135deg, #2563eb, #1e3a8a);
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
+  background: transparent!important; /* let our full-screen bg show everywhere */
 }
 
-.auth-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  padding: 20px;
+/* Grid for hero (left) + form (right) */
+.login-layout {
+  position: relative;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  z-index: 1;
 }
 
-/* Card wrapper with animations */
-.auth-card {
-  background: #fff;
-  color: #111;
-  padding: 28px;
-  border-radius: 14px;
-  width: 100%;
-  max-width: 360px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  transition: all 0.3s ease;
-  animation: fadeIn 0.4s ease, slideUp 0.4s ease;
+/* 🔥 Full-screen background layer behind EVERYTHING */
+.login-layout::before {
+   content:"";
+  position: fixed;
+  inset: 0;
+  /* if vars are flaky, hardcode the url here */
+  background: url("../assets/login-bg.jpg")
+              center / cover no-repeat;
+              transform: scaleX(-1);
+  /* if you want it mirrored, add: transform: scaleX(-1); */
+  z-index: 0;    
+            /* was -1; some setups hide it behind body */
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+/* ===== Left “hero” overlay + text (no own background) ===== */
+.left-hero {
+  position: relative;     /* just a content container now */
+  overflow: hidden;
+  background: transparent;
+  z-index: 1;
 }
 
-@keyframes slideUp {
-  from { transform: translateY(20px); }
-  to { transform: translateY(0); }
+/* Use ::after instead of a child div so it never exceeds the column */
+.left-hero::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* softer edge so you don’t see a harsh black line */
+  background: linear-gradient(
+    120deg,
+    rgba(0,0,0,.45) 0%,
+    rgba(0,0,0,.22) 40%,
+    rgba(0,0,0,0) 72%
+  );
 }
 
-.auth-card h2 {
-  margin-bottom: 18px;
-  font-size: 1.7rem;
-  text-align: center;
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  /* left-side dark gradient for readability over the photo */
+  background: linear-gradient(120deg,
+    rgba(0,0,0,.55) 0%,
+    rgba(0,0,0,.25) 40%,
+    rgba(0,0,0,0) 70%);
 }
 
-.auth-card form {
+.hero-inner {
+  position: relative;
+  height: 100%;
+  padding: clamp(24px, 6vw, 64px);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  justify-content: center;
+  gap: 16px;
+  color: #fff;
+  max-width: 560px;
 }
 
-.auth-card input {
-  padding: 12px;
-  border: 1px solid #ddd;
+.hero-title {
+  margin: 0;
+  font-size: clamp(44px, 6.4vw, 72px);
+  line-height: .95;
+  font-weight: 800;
+  letter-spacing: .5px;
+}
+
+.hero-copy {
+  margin: 8px 0 16px 0;
+  color: #fcfdfd;
+  max-width: 46ch;
+  font-size: 15px;
+}
+
+/* ===== Right: form on top of the photo (no background) ===== */
+.right-form {
+  display: grid;
+  place-items: center;
+  padding: clamp(20px, 5vw, 40px);
+  background: transparent;   /* remove white panel */
+  z-index: 2;
+}
+
+.signin-card{
+  width: min(570px, 92vw);
+  background: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+.signin-title {
+  margin: 0 0 16px 0;
+  font-size: 28px;
+  font-weight: 800;
+  color: #fff; 
+  text-align: left;
+}
+
+.signin-form { display: flex; flex-direction: column; gap: 12px; }
+
+/* Inputs */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field-label { font-size: 13px; color: #e5e7eb;  }
+
+.field input {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #111;
+  width: 60%;
+  padding: 12px 12px;
+  font-size: 15px;             /* keep inputs readable */
   border-radius: 8px;
-  font-size: 1rem;
+  transition: box-shadow .15s ease, border-color .15s ease;
 }
-
-.auth-card input:focus {
+.field input:focus {
   outline: none;
   border-color: #2563eb;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 0 0 4px var(--ring);
+}
+.field input:disabled { background: #f4f4f5; color: #9ca3af; }
+
+/* Row with remember + lost password */
+.form-row {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 2px; margin-bottom: 4px;
+  width: 60%;
 }
 
-.auth-card input:disabled {
-  background-color: #f9f9f9;
-  opacity: 0.7;
-  cursor: not-allowed;
+.remember-me { display: inline-flex; align-items: center; gap: 8px; color: #e5e7eb; font-size: 14px; user-select: none; }
+.remember-me input { transform: translateY(1px); }
+
+
+/* Primary button */
+.btn-primary {
+  display: inline-flex; justify-content: center;
+  width: 60%; padding: 12px 14px; border-radius: 8px; border: none;
+  background: var(--brand); color: #fff; font-weight: 700; font-size: 15px;
+  cursor: pointer; transition: background .15s ease, transform .02s ease-in;
+}
+.btn-primary:hover { background: var(--brand-hover); }
+.btn-primary:disabled { background: #cbd5e1; cursor: not-allowed; }
+
+
+.have-account { margin-top: 14px; font-size: 14px; color: #e5e7eb; }
+.have-account a { color: #2563eb; text-decoration: underline; font-weight: 700; }
+.have-account a:hover { color: #1e40af; }
+
+/* Feedback banners */
+.banner { margin-top: 10px; padding: 10px 12px; border-radius: 8px; font-size: 14px; text-align: left; }
+.banner-success { color: #065f46; background: #d1fae5; border: 1px solid #a7f3d0; }
+.banner-error   { color: #b91c1c; background: #fee2e2; border: 1px solid #fecaca; }
+
+/* ===== Responsive ===== */
+@media (max-width: 980px) {
+  .login-layout { grid-template-columns: 1fr; }
+  .left-hero { height: 40vh; }
+  .right-form { align-items: flex-start; }
+  .signin-card { margin-top: -24px; }
 }
 
-.auth-card button[type="submit"] {
-  background: #2563eb;
-  color: white;
-  padding: 12px;
-  font-size: 1rem;
-  font-weight: bold;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.auth-card button[type="submit"]:hover:not(:disabled) {
-  background: #1e40af;
-}
-
-.auth-card button[type="submit"]:disabled {
-  background: #9ca3af;
-  cursor: not-allowed;
-}
-
-.auth-card p {
-  margin-top: 14px;
-  text-align: center;
-  font-size: 0.95rem;
-}
-
-.auth-card p a {
-  color: #2563eb;
-  font-weight: bold;
-  text-decoration: underline;
-}
-
-.auth-card p a:hover {
-  color: #1e40af;
-}
-
-.error {
-  color: #dc2626;
-  background: #fee2e2;
-  border: 1px solid #fca5a5;
-  padding: 8px;
-  margin-top: 12px;
-  border-radius: 8px;
-  text-align: center;
-  font-size: 0.9rem;
-}
-
-.success {
-  color: #059669;
-  background: #d1fae5;
-  border: 1px solid #a7f3d0;
-  padding: 8px;
-  margin-top: 12px;
-  border-radius: 8px;
-  text-align: center;
-  font-size: 0.9rem;
-}
