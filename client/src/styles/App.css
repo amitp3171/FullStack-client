@@ -1,25 +1,63 @@
 /* src/styles/App.css */
 
+/* ---- App background token (works with your dark-mode toggle) ---- */
+:root {
+  /* Light page background */
+  --app-bg: #f4f6fa; /* subtle light grey */
+  /* Fallbacks if other files aren't loaded first */
+  --text: #0f172a;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --surface-3: #f3f4f6;
+  --border: #e5e7eb;
+}
+
+html[data-theme="dark"] {
+  /* Dark page background (rich dark grey) */
+  --app-bg: #121417;
+
+  /* Optional: if this file loads before your ChatArea tokens,
+     these ensure consistent dark neutrals. Remove if redundant. */
+  --text: #e5e7eb;
+  --surface: #0f1218;
+  --surface-2: #0f1218;
+  --surface-3: #111827;
+  --border: #1f2937;
+}
+
+/* Page background + text color */
+html, body, #root {
+  height: 100%;
+  background: var(--app-bg);
+  color: var(--text);
+}
+
+/* ---- App shell ---- */
 .app-container {
   font-family: Arial, sans-serif;
-  height: 100vh;
-  width: 100vw;
+  min-height: 100vh;
+  width: 100%;                 /* avoid 100vw scrollbar issues */
   display: flex;
   flex-direction: column;
   position: relative;
-  background: #f5f5f5;
+  background: var(--app-bg);   /* was #f5f5f5 */
+  color: var(--text);
   overflow: hidden;
 }
 
+/* Main content area (kept transparent to show page bg) */
 .main-section {
   flex: 1;
-  align-items: center;
   position: relative;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  background: transparent;
+  color: inherit;
 }
 
+/* Centered overlay (suggestion cards) */
 .suggestion-overlay {
   position: absolute;
   top: 50%;
@@ -28,7 +66,7 @@
   z-index: 5;
 }
 
-/* Inline SQL editing */
+/* ---- Inline SQL editing ---- */
 .edit-sql-container {
   display: flex;
   flex-direction: column;
@@ -37,11 +75,13 @@
 
 .sql-editor-inline {
   width: 100%;
-  font-family: monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   font-size: 0.9rem;
   padding: 8px;
   border-radius: 6px;
-  border: 1px solid #aaa;
+  border: 1px solid var(--border);   /* themed */
+  background: var(--surface);        /* themed */
+  color: var(--text);                /* themed */
   resize: vertical;
 }
 
@@ -51,15 +91,18 @@
   justify-content: flex-end;
 }
 
+/* Make cancel neutral + theme aware */
 .cancel-btn {
   padding: 4px 10px;
   font-size: 0.85rem;
-  background: #aaa;
-  color: white;
-  border: none;
+  background: var(--surface-3);      /* themed */
+  color: var(--text);                /* themed */
+  border: 1px solid var(--border);   /* themed */
   border-radius: 6px;
   cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
 }
 .cancel-btn:hover {
-  background: #888;
+  background: var(--surface-2);      /* themed */
+  border-color: var(--border);
 }

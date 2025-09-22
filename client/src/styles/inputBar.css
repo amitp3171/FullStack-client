@@ -1,163 +1,51 @@
-/* ================= Input Bar (keep yours) ================= */
+/* ================= Input Bar ================= */
 .input-bar {
   position: sticky;
   bottom: 0;
   width: 100%;
   padding: 15px 20px;
-  background: #fff;
-  border-top: 1px solid #ccc;
+  background: var(--surface-2);
+  border-top: 1px solid var(--border);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 10;
   gap: 10px;
+  color: var(--text);
+  backdrop-filter: saturate(120%) blur(2px);
 }
 
 .chat-input {
   flex: none;
   width: 70%;
-  max-width: 500px;
+  max-width: 640px;
   padding: 12px 15px;
   border-radius: 30px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
   outline: none;
   font-size: 1rem;
+  transition: box-shadow .15s ease, border-color .15s ease;
+}
+.chat-input::placeholder { color: var(--muted); }
+.chat-input:focus {
+  border-color: var(--accent);
+  box-shadow: var(--ring);
 }
 
 .send-btn {
   padding: 12px 20px;
   border: none;
   border-radius: 20px;
-  background: black;
-  color: white;
+  background: var(--accent);
+  color: #fff;
   cursor: pointer;
-  font-weight: bold;
-  transition: background 0.2s;
+  font-weight: 700;
+  transition: background .2s ease;
 }
-.send-btn:hover { background: #333; }
-
-.file-preview {
-  display: inline-flex;
-  align-items: center;
-  background: #f6f6f6;
-  border: 1px solid #ddd;
-  border-radius: 16px;
-  padding: 2px 10px 2px 6px;
-  margin: 0 8px;
-  font-size: 0.95em;
-  color: #222;
-  box-shadow: 0 1px 2px #00000008;
-}
-.file-preview svg { margin-right: 4px; }
-
-/* ================= Upload button + dropdown ================= */
-/* Anchor for the dropdown */
-.upload-wrap {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
-.upload-btn {
-  background: #fff;
-  border: 2px solid #222;
-  border-radius: 50%;     /* ⬅️ makes it circular */
-  width: 40px;            /* same width & height */
-  height: 40px;
-  margin: 0 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s, box-shadow 0.2s;
-  padding: 0;             /* no extra padding */
-}
-
-.upload-btn:hover {
-  background: #f2f2f2;
-  box-shadow: 0 0 4px #22222233;
-}
-
-.upload-btn svg {
-  width: 20px;
-  height: 20px;
-  display: block;
-  pointer-events: none;
-}
-
-/* Dropdown menu */
-/* Upload menu - drop UP instead of down */
-.upload-menu {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 8px);   /* ⬅️ instead of top */
-  min-width: 210px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  box-shadow: 0 -12px 30px rgba(0,0,0,0.12); /* shadow pointing upward */
-  padding: 6px;
-  z-index: 2000;
-}
-
-
-.upload-menu-item {
-  width: 100%;
-  background: transparent;
-  border: none;
-  text-align: left;
-  padding: 10px 12px;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  cursor: pointer;
-}
-.upload-menu-item:hover:not(:disabled) { background: #f5f7fb; }
-.upload-menu-item:disabled { opacity: 0.5; cursor: not-allowed; }
-
-/* ================= Modal (history) ================= */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 4000;
-}
-.modal {
-  width: min(680px, 92vw);
-  max-height: 70vh;
-  overflow: auto;
-  background: #ffffff;
-  border-radius: 14px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-  padding: 14px 14px 6px 14px;
-}
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 4px 8px 6px;
-  border-bottom: 1px solid #eef2f7;
-  margin-bottom: 8px;
-}
-.icon-btn { border: none; background: transparent; font-size: 1rem; cursor: pointer; }
-
-.history-list { list-style: none; display: flex; flex-direction: column; gap: 8px; padding: 6px 2px 10px 2px; margin: 0; }
-.history-row {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 10px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fafafa;
-}
-.history-meta { display: grid; gap: 2px; }
-.history-name { font-weight: 600; }
-.history-sub { color: #6b7280; font-size: 0.85rem; }
-.btn { border: none; background: #0078ff; color: #fff; border-radius: 8px; padding: 6px 10px; cursor: pointer; }
-.btn-small { padding: 6px 10px; font-size: 0.85rem; }
-
-.send-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
+.send-btn:hover { background: var(--accent-hover); }
+.send-btn:disabled { opacity: .7; cursor: not-allowed; }
 
 /* Minimal spinner inside the Send button */
 .btn-spinner {
@@ -170,10 +58,125 @@
   animation: spin 0.8s linear infinite;
   vertical-align: middle;
 }
-@keyframes spin {
-  to { transform: rotate(360deg); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* File preview chip */
+.file-preview {
+  display: inline-flex;
+  align-items: center;
+  background: var(--chip-bg);
+  border: 1px solid var(--chip-border);
+  border-radius: 16px;
+  padding: 2px 10px 2px 6px;
+  margin: 0 8px;
+  font-size: 0.95em;
+  color: var(--text);
+  box-shadow: 0 1px 2px #00000008;
+}
+.file-preview svg { margin-right: 4px; }
+
+/* ================= Upload button + dropdown ================= */
+.upload-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
 }
 
+.upload-btn {
+  background: var(--surface);
+  border: 2px solid var(--text);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  margin: 0 8px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background .2s, box-shadow .2s, border-color .2s;
+  color: var(--text);
+}
+.upload-btn:hover {
+  background: var(--surface-2);
+  box-shadow: 0 0 4px #00000022;
+  border-color: var(--text);
+}
+.upload-btn svg { width: 20px; height: 20px; pointer-events: none; }
+
+/* Drop-UP menu */
+.upload-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  min-width: 210px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 -12px 30px rgba(0,0,0,0.12);
+  padding: 6px;
+  z-index: 2000;
+  color: var(--text);
+}
+
+.upload-menu-item {
+  width: 100%;
+  background: transparent;
+  border: none;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  color: var(--text);
+}
+.upload-menu-item:hover:not(:disabled) { background: var(--surface-2); }
+.upload-menu-item:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ================= Modal (history) ================= */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4000;
+}
+html[data-theme="dark"] .modal-overlay { background: rgba(2,6,23,.65); }
+
+.modal {
+  width: min(680px, 92vw);
+  max-height: 70vh;
+  overflow: auto;
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  padding: 14px 14px 6px 14px;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 4px 8px 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.icon-btn { border: none; background: transparent; color: var(--text); font-size: 1rem; cursor: pointer; }
+
+.history-list { list-style: none; display: flex; flex-direction: column; gap: 8px; padding: 6px 2px 10px 2px; margin: 0; }
+.history-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2);
+}
+.history-meta { display: grid; gap: 2px; }
+.history-name { font-weight: 600; color: var(--text); }
+.history-sub { color: var(--muted); font-size: 0.85rem; }
+
+.btn { border: none; background: var(--accent); color: #fff; border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+.btn:hover { background: var(--accent-hover); }
+.btn-small { padding: 6px 10px; font-size: 0.85rem; }
+
+/* Quick Result button */
 .quick-result-btn {
   padding: 12px 20px;
   border: none;
@@ -181,11 +184,8 @@
   background: #16a34a;
   color: white;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 700;
   transition: background 0.2s;
   margin-left: 6px;
 }
-
-.quick-result-btn:hover {
-  background: #15803d;
-}
+.quick-result-btn:hover { background: #15803d; }

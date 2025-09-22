@@ -1,27 +1,30 @@
-/* src/styles/suggestionCards.css */
+/* ================= Suggestion Cards ================= */
 .suggestion-container {
   display: grid;
   grid-template-columns: repeat(2, minmax(200px, 1fr));
   gap: 20px;
-   justify-content: center;
-  align-items: center;
-  margin: 2rem ;
-}
-.suggestion-card {
-  background: #ddd;
-  width: 150px;
-  height: 150px;
-  display: flex;
   justify-content: center;
   align-items: center;
-  border-radius: 16px;
-  text-align: center;
-  padding: 10px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  
+  margin: 2rem;
 }
 
+.suggestion-card {
+  background: var(--surface-2);
+  color: var(--text);
+  width: 180px;
+  height: 150px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  text-align: center;
+  padding: 12px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  border: 1px solid var(--border);
+  transition: background .15s ease, transform .05s ease, border-color .15s ease;
+}
 .suggestion-card:hover {
-  background: #ccc;
+  background: var(--surface-3);
+  border-color: var(--chip-border);
+  transform: translateY(-1px);
 }

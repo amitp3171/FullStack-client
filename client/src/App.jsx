@@ -10,10 +10,11 @@ import Navbar from "./components/Navbar.jsx";
 import SuggestionCards from "./components/SuggestionCards.jsx";
 import ChatArea from "./components/chatArea.jsx";
 import InputBar from "./components/InputBar.jsx";
-import SideMenu from "./components/SideMenu.jsx";
+import SideMenu from "./components/sideMenu.jsx";
 import Login from "./components/Login.jsx";
 import Register from "./components/Register.jsx";
 import "./styles/App.css";
+import "./styles/theme.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 

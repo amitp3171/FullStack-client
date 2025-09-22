@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
+import ThemeToggle from "./ThemeToggle.jsx"; // ⬅️ add this
 import "../styles/SideMenu.css";
 
 export default function SideMenu({ open, onToggle, onOpenHistory, onLogout }) {
-  // derive username from localStorage (same logic you had)
   const smUsername = (() => {
     try {
       const direct =
@@ -37,10 +37,8 @@ export default function SideMenu({ open, onToggle, onOpenHistory, onLogout }) {
 
   const handleLogout = async () => {
     try {
-      // let the parent clear tokens/session if it wants
       await onLogout?.();
     } finally {
-      // then hard-redirect to login
       window.location.assign("/login");
     }
   };
@@ -60,10 +58,10 @@ export default function SideMenu({ open, onToggle, onOpenHistory, onLogout }) {
         <li onClick={onOpenHistory} style={{ cursor: "pointer" }}>
           History
         </li>
-        {/* Removed Logout from the list */}
+        {/* Logout moved into the user drop-up */}
       </ul>
 
-      {/* User footer: clickable → opens a small drop-up with Logout */}
+      {/* Footer button that opens the drop-up */}
       <button
         type="button"
         className="sm-user-footer"
@@ -95,7 +93,20 @@ export default function SideMenu({ open, onToggle, onOpenHistory, onLogout }) {
       </button>
 
       {userMenuOpen && (
-        <div className="sm-user-menu" role="menu">
+        <div
+          className="sm-user-menu"
+          role="menu"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Theme row */}
+          <div className="sm-menu-row" role="none">
+            <span className="sm-menu-label">Dark mode</span>
+            <ThemeToggle compact />
+          </div>
+
+          <div className="sm-divider" role="separator" />
+
+          {/* Logout */}
           <button
             className="sm-menu-item"
             role="menuitem"

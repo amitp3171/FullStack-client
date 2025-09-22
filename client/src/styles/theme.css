@@ -1,0 +1,71 @@
+/* src/styles/theme.css */
+
+/* Light (default) */
+:root {
+  color-scheme: light;
+  /* neutrals */
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-elev: rgba(255,255,255,0.88);
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --border: #e5e7eb;
+
+  /* brand */
+  --brand: #e35d17;
+  --brand-hover: #c04c12;
+
+  /* accents */
+  --ring: rgba(37,99,235,.25);
+  --code-bg: #1118270a;
+
+  /* buttons (subtle) */
+  --btn-bg: #f8fafc;
+  --btn-border: #d1d5db;
+  --btn-text: #111827;
+  --btn-bg-hover: #f3f4f6;
+}
+
+/* Dark */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0b1220;
+  --surface: #0f172a;
+  --surface-elev: rgba(15,23,42,0.88);
+  --text: #e5e7eb;
+  --text-muted: #cbd5e1;
+  --border: #243244;
+
+  --brand: #f08a3e;
+  --brand-hover: #d7742c;
+
+  --ring: rgba(99,102,241,.35);
+  --code-bg: rgba(255,255,255,0.06);
+
+  --btn-bg: rgba(255,255,255,0.06);
+  --btn-border: #3b4a60;
+  --btn-text: #e5e7eb;
+  --btn-bg-hover: rgba(255,255,255,0.12);
+}
+
+/* Base page background/text */
+html, body, #root {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Generic subtle button (good for Run/Edit buttons too) */
+.button-subtle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background .15s ease, box-shadow .15s ease;
+}
+.button-subtle:hover { background: var(--btn-bg-hover); }
