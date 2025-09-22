@@ -13,15 +13,15 @@
   --th-bg:  #f3f4f6;
   --tr-alt: #f9fafb;
 
-  /* accents (keep brand) */
-  --accent:       #2563eb;   /* Run button, etc. */
+  /* accents (brand) */
+  --accent:       #2563eb;
   --accent-hover: #1d4ed8;
-  --warn:         #f59e0b;   /* Edit button */
+  --warn:         #f59e0b;
   --warn-hover:   #d97706;
 
   /* subtle chips / controls */
-  --chip-bg:    #f9fafb;
-  --chip-border:#d1d5db;
+  --chip-bg:     #f9fafb;
+  --chip-border: #d1d5db;
 
   /* code blocks / editors */
   --code-bg: #1118270a;
@@ -29,8 +29,8 @@
 
   /* user bubble (light) */
   --user-bubble-bg:     #eef2f7;  /* lighter grey */
-  --user-bubble-text:   #0f172a;  /* dark text */
-  --user-bubble-border: #dbe2ea;  /* subtle border */
+  --user-bubble-text:   #0f172a;
+  --user-bubble-border: #dbe2ea;
 }
 
 html[data-theme="dark"]{
@@ -44,21 +44,21 @@ html[data-theme="dark"]{
   --th-bg:  #0f172a;
   --tr-alt: #0c1320;
 
-  --chip-bg:    #0f172a;
-  --chip-border:#1f2937;
+  --chip-bg:     #0f172a;
+  --chip-border: #1f2937;
 
   --code-bg: #0b1220;
 
-  /* keep brand accents identical; they read well on dark */
+  /* keep brand accents identical */
   --accent:#2563eb;
   --accent-hover:#1d4ed8;
   --warn:#f59e0b;
   --warn-hover:#d97706;
 
   /* user bubble (dark) */
-  --user-bubble-bg:     #1f2937;  /* slate-800 */
-  --user-bubble-text:   #e5e7eb;  /* light text */
-  --user-bubble-border: #334155;  /* slate-700 */
+  --user-bubble-bg:     #1f2937;
+  --user-bubble-text:   #e5e7eb;
+  --user-bubble-border: #334155;
 }
 
 /* ---------- Chat area ---------- */
@@ -99,7 +99,7 @@ html[data-theme="dark"]{
 
 .user-bubble{
   align-self:flex-end;
-  background:var(--user-bubble-bg);       /* lighter grey */
+  background:var(--user-bubble-bg);
   color:var(--user-bubble-text);
   border:1px solid var(--user-bubble-border);
   border-bottom-right-radius:4px;
@@ -122,10 +122,7 @@ html[data-theme="dark"]{
 /* ---------- Results ---------- */
 .results-table{ margin-top:8px; overflow-x:auto; }
 
-.sql-result{
-  position:relative;
-  overflow:visible;
-}
+.sql-result{ position:relative; overflow:visible; }
 
 .sql-result table{
   width:100%;
@@ -145,40 +142,41 @@ html[data-theme="dark"]{
   text-align:left;
 }
 
-.sql-result th{
-  background:var(--th-bg);
-  font-weight:600;
+.sql-result th{ background:var(--th-bg); font-weight:600; }
+
+.sql-result tr:nth-child(even){ background:var(--tr-alt); }
+
+/* ---------- Tiny icon buttons (Run / Edit, etc.) ---------- */
+.query-actions{
+  margin-top:8px;
+  display:flex;
+  gap:6px;
 }
 
-.sql-result tr:nth-child(even){
-  background:var(--tr-alt);
-}
-
-/* ---------- Buttons ---------- */
-.run-query-btn{
-  margin-top:6px;
-  padding:4px 10px;
-  font-size:.85rem;
-  background:var(--accent);
-  color:#fff;
-  border:none;
-  border-radius:6px;
+.icon-btn{
+  width:28px;
+  height:28px;
+  display:grid;
+  place-items:center;
+  border-radius:8px;
+  border:1px solid var(--chip-border);
+  background:transparent;
+  color:var(--text);
   cursor:pointer;
-  transition:background .2s ease;
+  padding:0;
+  transition: background .15s ease, border-color .15s ease, transform .05s ease, box-shadow .15s ease;
 }
-.run-query-btn:hover{ background:var(--accent-hover); }
+.icon-btn:hover{
+  background:var(--surface-2);
+  border-color:var(--border);
+}
+.icon-btn:active{ transform: translateY(1px); }
+.icon-btn:focus-visible{ outline:none; box-shadow: var(--ring); }
+.icon-btn svg{ width:14px; height:14px; display:block; }
 
-.edit-query-btn{
-  padding:4px 10px;
-  font-size:.85rem;
-  background:var(--warn);
-  color:#fff;
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
-  transition:background .2s ease;
-}
-.edit-query-btn:hover{ background:var(--warn-hover); }
+/* legacy button classes kept for compatibility (unused now) */
+.run-query-btn,
+.edit-query-btn{ display:none; }
 
 /* ---------- Inline SQL editor ---------- */
 .sql-editor{
@@ -208,9 +206,6 @@ html[data-theme="dark"]{
   border-radius:6px;
   cursor:pointer;
 }
-.modal-actions button:first-child{
-  background:var(--surface-2);
-}
 .modal-actions button:last-child{
   background:var(--accent);
   color:#fff;
@@ -225,12 +220,7 @@ html[data-theme="dark"]{
   font-style:italic;
 }
 
-.typing{
-  display:inline-flex;
-  gap:6px;
-  padding:8px 12px;
-  align-items:center;
-}
+.typing{ display:inline-flex; gap:6px; padding:8px 12px; align-items:center; }
 
 .dot{
   width:6px; height:6px; border-radius:50%;
@@ -246,7 +236,7 @@ html[data-theme="dark"]{
   40%{ transform:translateY(-4px); opacity:1; }
 }
 
-/* ---------- SQL code block (when showing SQL) ---------- */
+/* ---------- SQL code block ---------- */
 .sql-block{
   margin-top:4px;
   background:var(--code-bg);
@@ -281,32 +271,27 @@ html[data-theme="dark"]{
   cursor:pointer;
   transition:background .15s ease, border-color .15s ease, transform .05s ease, box-shadow .15s ease;
 }
-.export-toggle:hover{
-  background:var(--surface-2);
-  border-color:var(--border);
-}
+.export-toggle:hover{ background:var(--surface-2); border-color:var(--border); }
 .export-toggle:active{ transform:translateY(1px); }
-.export-toggle:focus-visible{
-  outline:none;
-  box-shadow: var(--ring);
-}
+.export-toggle:focus-visible{ outline:none; box-shadow: var(--ring); }
 
-/* dropdown menu */
+/* dropdown menu: open ABOVE the button (drop-up) */
 .export-menu{
-  position:absolute;
-  right:0;
-  top:calc(100% + 6px);
-  width:160px;
-  background:var(--surface);
-  color:var(--text);
-  border:1px solid var(--border);
-  border-radius:8px;
-  box-shadow:0 8px 24px rgba(0,0,0,.18);
-  padding:6px;
-  z-index:20;
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px); /* ⬅️ anchor above the toggle */
+  top: auto;                /* ⬅️ remove top anchoring */
+  width: 160px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 -8px 24px rgba(0,0,0,.18); /* ⬅️ shadow pointing upward */
+  padding: 6px;
+  z-index: 20;
 }
 
-/* items */
+
 .export-item{
   width:100%;
   text-align:left;

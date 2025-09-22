@@ -1,196 +1,232 @@
-:root{
-  /* tokens */
-  --surface: #ffffff;
-  --surface-2:#f8fafc;
-  --text:#0f172a;
-  --muted:#64748b;
-  --border:#e5e7eb;
-  --shadow: 0 10px 30px rgba(2,6,23,.08);
-  --ring: 0 0 0 2px rgba(59,130,246,.25);
+/* src/styles/SideMenu.css */
+:root {
+  --panel-w: 240px;          /* sidebar width */
+  --handle-w: 60px;          /* visible tab when closed */
 
-  --panel-w:240px;   /* sidebar width */
-  --handle-w:60px;   /* visible tab when closed */
+  /* Light theme tokens */
+  --sm-bg: #ffffff;
+  --sm-text: #0f172a;
+  --sm-muted: #6b7280;
+  --sm-border: #e5e7eb;
+  --sm-hover: #f3f4f6;
+  --sm-footer-bg: #f9fafb;
+  --sm-avatar-bg: rgba(148,163,184,.18);
+  --sm-shadow: rgba(0,0,0,.12);
+  --sm-overlay: rgba(0,0,0,.35);
+  --sm-ring: 0 0 0 2px rgba(37,99,235,.40);
+
+  /* Accent/danger */
+  --danger: #ef4444;        /* red-500 */
+  --danger-hover: #dc2626;  /* red-600 */
+  --danger-text: #ffffff;
 }
 
-/* dark theme support if you flip data-theme on <html> */
-html[data-theme="dark"]{
-  --surface:#0b1220;
-  --surface-2:#101826;
-  --text:#e5e7eb;
-  --muted:#9aa4b2;
-  --border:#1f2a37;
-  --shadow: 0 10px 30px rgba(0,0,0,.45);
+html[data-theme="dark"] {
+  --sm-bg: #0f172a;
+  --sm-text: #e5e7eb;
+  --sm-muted: #9aa4b2;
+  --sm-border: #1f2937;
+  --sm-hover: #111827;
+  --sm-footer-bg: #0b1220;
+  --sm-avatar-bg: rgba(148,163,184,.25);
+  --sm-shadow: rgba(0,0,0,.5);
+  --sm-overlay: rgba(2,6,23,.65);
+  --sm-ring: 0 0 0 2px rgba(59,130,246,.45);
 }
 
 /* helpful default */
-*,*::before,*::after{ box-sizing:border-box; }
+*, *::before, *::after { box-sizing: border-box; }
 
 /* Drawer */
-.side-menu{
-  position:fixed; top:0; left:0;
-  width:var(--panel-w); height:100vh;
-  background:var(--surface);
-  color:var(--text);
-  border-right:1px solid var(--border);
-  box-shadow:2px 0 12px rgba(0,0,0,.12);
-  padding:20px;
-  padding-bottom:92px;                 /* room for footer chip */
-  z-index:1000;
+.side-menu {
+  position: fixed;
+  top: 0;                    /* cover the navbar */
+  left: 0;
+  width: var(--panel-w);
+  height: 100vh;            /* full height */
+  background: var(--sm-bg);
+  color: var(--sm-text);
+  border-right: 1px solid var(--sm-border);
+  box-shadow: 2px 0 12px var(--sm-shadow);
+  padding: 20px;
+  padding-bottom: 92px;     /* footer room inside */
+  z-index: 1300;
 
-  /* keep a sliver visible when closed */
-  transform:translateX(calc(-100% + var(--handle-w)));
-  transition:transform .25s ease;
+  /* Keep a sliver (the handle) visible when closed */
+  transform: translateX(calc(-100% + var(--handle-w)));
+  transition: transform .25s ease;
 }
-.side-menu.open{ transform:translateX(0); }
 
-/* Handle (… tab) */
-.menu-handle{
-  position:absolute; top:12px; right:calc(var(--handle-w) * -1);
-  width:var(--handle-w); height:40px;
-  display:grid; place-items:center;
-  background:var(--surface);
-  color:var(--text);
-  border:1px solid var(--border);
-  border-left:none;
-  border-radius:0 10px 10px 0;
-  box-shadow:2px 0 8px rgba(0,0,0,.10);
-  cursor:pointer; user-select:none;
-  z-index:1100;
-  font-size:20px;
-  transition:background .15s ease, box-shadow .15s ease;
-}
-.menu-handle:hover{ background:var(--surface-2); box-shadow:2px 0 10px rgba(0,0,0,.14); }
-.menu-handle:focus-visible{ outline:var(--ring); }
+/* Open state: fully visible */
+.side-menu.open { transform: translateX(0); }
 
-/* Backdrop when open (optional – toggle a .show class from JS if you want) */
-.side-overlay{
-  position:fixed; inset:0; background:rgba(0,0,0,.35);
-  z-index:900; opacity:0; pointer-events:none; transition:opacity .2s ease;
+/* The three-dots handle that lives on the menu edge */
+.menu-handle {
+  position: absolute;
+  top: 12px;
+  right: calc(var(--handle-w) * -1); /* stick out */
+  width: var(--handle-w);
+  height: 40px;
+  display: grid; place-items: center;
+  background: var(--sm-bg);
+  color: var(--sm-text);
+  border: 1px solid var(--sm-border);
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  box-shadow: 2px 0 8px var(--sm-shadow);
+  cursor: pointer;
+  user-select: none;
+  z-index: 1310; /* above overlay & menu content */
+  font-size: 20px; /* dots size */
 }
-.side-overlay.show{ opacity:1; pointer-events:auto; }
+.menu-handle:focus-visible { outline: none; box-shadow: var(--sm-ring); }
+
+/* Backdrop */
+.side-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--sm-overlay);
+  z-index: 1250;  /* behind the menu, above content */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease;
+}
+.side-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
 
 /* Menu items */
-.side-menu ul{ list-style:none; margin:0; padding:0; }
-.side-menu li{
-  margin:18px 0;
-  padding:10px 12px;
-  border-radius:10px;
-  font-size:15.5px;
-  color:var(--text);
-  cursor:pointer;
-  transition:background .15s ease, color .15s ease;
+.side-menu ul { list-style: none; margin: 0; padding: 0; }
+.side-menu li {
+  margin: 22px 0;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--sm-text);
 }
-.side-menu li:hover{ background:var(--surface-2); }
+.side-menu li:hover { background: var(--sm-hover); }
 
 /* If you use <ul class="sm-list"> in JSX */
-.sm-list{ list-style:none; margin:0; padding:0; }
+.sm-list { list-style: none; margin: 0; padding: 0; }
 
 /* ---------- User footer (click to open drop-up) ---------- */
-.sm-user-footer{
-  position:absolute !important; left:12px; right:12px; bottom:12px;
-  display:flex; align-items:center; gap:10px;
-  padding:10px 12px;
-  border:1px solid var(--border);
-  border-radius:12px;
-  background:var(--surface-2);
-  cursor:pointer; z-index:1010;
-  transition:background .15s ease, box-shadow .15s ease, border-color .15s ease;
-  text-align:left;
-}
-.sm-user-footer:hover{ background:var(--surface); box-shadow:0 2px 10px rgba(0,0,0,.06); }
-.sm-user-footer:focus-visible{ outline:var(--ring); }
+.sm-user-footer {
+  position: absolute !important;
+  left: 12px; right: 12px;
+  bottom: 12px;
+  display: flex; align-items: center; gap: 10px;
 
-.sm-user-avatar{
-  width:34px; height:34px; border-radius:999px;
-  display:grid; place-items:center; font-weight:700;
-  background:rgba(148,163,184,.18); color:var(--text);
+  padding: 10px 12px;
+  border: 1px solid var(--sm-border);
+  border-radius: 12px;
+  background: var(--sm-footer-bg);
+  color: var(--sm-text);
+
+  cursor: pointer;
+  z-index: 1310;
+  transition: background .15s ease, box-shadow .15s ease, border-color .15s ease;
+  text-align: left;
+}
+.sm-user-footer:hover {
+  background: var(--sm-hover);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+}
+.sm-user-footer:focus-visible { outline: none; box-shadow: var(--sm-ring); }
+
+.sm-user-avatar {
+  width: 34px; height: 34px; border-radius: 999px;
+  display: grid; place-items: center;
+  font-weight: 700;
+  background: var(--sm-avatar-bg);
+  color: var(--sm-text);
 }
 
-.sm-user-meta{ min-width:0; display:flex; flex-direction:column; }
-.sm-user-name{
-  font-size:.96rem; color:var(--text);
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+.sm-user-meta { min-width: 0; display: flex; flex-direction: column; }
+.sm-user-name {
+  font-size: 0.95rem;
+  color: var(--sm-text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 /* caret arrow on the right of the footer */
-.sm-caret{ margin-left:auto; opacity:.75; transition:transform .15s ease; }
-.sm-caret.open{ transform:rotate(180deg); }
+.sm-caret { margin-left: auto; opacity: .7; transition: transform .15s ease; color: var(--sm-text); }
+.sm-caret.open { transform: rotate(180deg); }
 
 /* ---------- Drop-up menu (opens above the footer) ---------- */
-.sm-user-menu{
-  position:absolute; left:12px; bottom:calc(12px + 56px); /* 12 gap + footer */
-  min-width:200px;
-  background:var(--surface);
-  color:var(--text);
-  border:1px solid var(--border);
-  border-radius:12px;
-  box-shadow:var(--shadow);
-  padding:6px;
-  z-index:1020;
-  animation:smPop .12s ease-out;
+.sm-user-menu {
+  position: absolute;
+  right: 12px;
+  bottom: calc(12px + 56px);  /* 12px gap + ~footer height */
+  min-width: 180px;
+
+  background: var(--sm-bg);
+  color: var(--sm-text);
+  border: 1px solid var(--sm-border);
+  border-radius: 12px;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.10);
+  padding: 6px;
+  z-index: 1320;
+
+  animation: smPop .12s ease-out;
 }
-@keyframes smPop{
-  from{ transform:translateY(6px) scale(.98); opacity:0; }
-  to  { transform:translateY(0)   scale(1);   opacity:1; }
-}
-/* little arrow pointing to the footer */
-.sm-user-menu::after{
-  content:"";
-  position:absolute; left:18px; bottom:-6px;
-  width:12px; height:12px;
-  background:var(--surface);
-  border-left:1px solid var(--border);
-  border-bottom:1px solid var(--border);
-  transform:rotate(45deg);
+@keyframes smPop {
+  from { transform: translateY(6px) scale(.98); opacity: 0; }
+  to   { transform: translateY(0) scale(1);   opacity: 1; }
 }
 
-/* Row with label on left + toggle on right */
-.sm-menu-row{
+/* Theme row in dropup (optional helper classes) */
+.sm-menu-row {
   display:flex; align-items:center; justify-content:space-between;
-  gap:12px; padding:8px 10px; border-radius:8px;
+  gap:10px; padding: 6px 8px;
 }
-.sm-menu-row:hover{ background:var(--surface-2); }
-.sm-menu-label{ font-size:.94rem; color:var(--text); }
+.sm-menu-label { font-size: .9rem; color: var(--sm-muted); }
 
-/* Divider */
-.sm-divider{
-  height:1px; background:var(--border); margin:6px 4px; border-radius:1px;
+/* items */
+.sm-menu-item {
+  width: 100%; text-align: left;
+  padding: 8px 10px;
+  border: none; background: transparent;
+  color: var(--sm-text);
+  border-radius: 8px; cursor: pointer;
+  font-size: 0.95rem;
+  transition: background .15s ease, color .15s ease;
 }
+.sm-menu-item:hover { background: var(--sm-hover); }
 
-/* Menu button */
-.sm-menu-item{
-  width:100%; text-align:left;
-  padding:10px 10px; border:none; background:transparent;
-  border-radius:8px; cursor:pointer; font-size:.96rem; color:var(--text);
-  transition:background .12s ease, color .12s ease;
+/* RED Logout button */
+.sm-menu-item.danger {
+  background: var(--danger);
+  color: var(--danger-text);
 }
-.sm-menu-item:hover{ background:var(--surface-2); }
-
-/* Destructive (logout) – works even without extra class */
-.sm-user-menu .sm-menu-item:last-child,
-.sm-menu-item.logout{
-  color:#dc2626;
+.sm-menu-item.danger:hover {
+  background: var(--danger-hover);
+  color: var(--danger-text);
 }
-.sm-user-menu .sm-menu-item:last-child:hover,
-.sm-menu-item.logout:hover{
-  background:rgba(220,38,38,.08);
-}
+.sm-menu-item:focus-visible { outline: none; box-shadow: var(--sm-ring); }
 
 /* ---------- Optional “peek” avatar when the drawer is closed ---------- */
-:root{
-  --sm-peek-left:14px; --sm-peek-bottom:12px;
+:root {
+  --sm-peek-left: 14px;   /* match SideMenu left padding */
+  --sm-peek-bottom: 12px; /* match footer bottom gap */
 }
-.sm-avatar-peek{
-  position:fixed; left:var(--sm-peek-left); bottom:var(--sm-peek-bottom);
-  background:transparent; border:0; padding:0; margin:0;
-  cursor:pointer; z-index:1000;
+
+.sm-avatar-peek {
+  position: fixed;
+  left: var(--sm-peek-left);
+  bottom: calc(var(--sm-peek-bottom) + var(--inputbar-h, 72px)); /* sit above input bar */
+  background: transparent;
+  border: 0; padding: 0; margin: 0;
+  cursor: pointer;
+  z-index: 1000;
 }
-.sm-avatar-peek-bubble{
-  width:32px; height:32px; border-radius:999px;
-  display:grid; place-items:center; font-weight:700;
-  background:rgba(148,163,184,.18); color:var(--text);
-  user-select:none;
-}
-@supports(padding:max(0px)){
-  .sm-avatar-peek{ bottom:calc(var(--sm-peek-bottom) + env(safe-area-inset-bottom)); }
+
+.sm-avatar-peek-bubble {
+  width: 32px; height: 32px; border-radius: 999px;
+  display: grid; place-items: center;
+  font-weight: 700;
+  background: var(--sm-avatar-bg);
+  color: var(--sm-text);
+  user-select: none;
 }

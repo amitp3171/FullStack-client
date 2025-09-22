@@ -1,10 +1,17 @@
-/* ================= Navbar ================= */
+/* src/styles/navBar.css */
 .navbar {
+  position: fixed;                 /* fixed at top */
+  top: 0; left: 0; right: 0;
+  height: var(--navbar-h, 56px);
+  z-index: 1100;
+
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
   padding: 10px 20px;
+  box-sizing: border-box;
+
   background: var(--surface);
   color: var(--text);
   border-bottom: 1px solid var(--border);
@@ -37,13 +44,17 @@
   border-color: var(--border);
 }
 
-.new-chat-btn {
+/* Icon-only New Chat */
+.new-chat-btn{
+  width:36px;
+  height:36px;
+  display:grid;
+  place-items:center;
+  border-radius:10px;
+  border:none;
   background: var(--accent);
-  color: #fff;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 700;
+  color:#fff;
+  padding:0;
 }
-.new-chat-btn:hover { background: var(--accent-hover); }
+.new-chat-btn:hover{ background: var(--accent-hover); }
+.new-chat-btn svg{ width:18px; height:18px; display:block; }

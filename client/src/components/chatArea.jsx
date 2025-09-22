@@ -4,6 +4,21 @@ import "../styles/chatArea.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
+/* ---------- tiny inline icons (SVG uses currentColor) ---------- */
+const PlayIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M8 5l10 7-10 7V5z" fill="currentColor" />
+  </svg>
+);
+const PencilIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path
+      d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"
+      fill="currentColor"
+    />
+  </svg>
+);
+
 const isSqlQuery = (text) => {
   if (!text) return false;
   const cleaned = text
@@ -99,13 +114,10 @@ const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
     };
   }, []);
 
-  // Function to handle running a query with the associated file
   const handleRunQueryWithFile = (sql, message) => {
-    // Pass the entire message object so backend can access both _id and dbFileMessageId
     onRunQuery?.(sql, message._id, message.dbFileMessageId);
   };
 
-  // Re-run the query with no LIMIT and export the full result set
   const exportFull = async ({ sql, kind, fallbackRows }) => {
     try {
       if (!sql) {
@@ -183,10 +195,10 @@ const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
             key={i}
             className={`chat-bubble ${isUser ? "user-bubble" : "bot-bubble"}`}
           >
-            {/* === User message === */}
+            {/* User bubble */}
             {isUser && <div>{msg.text}</div>}
 
-            {/* === Bot message === */}
+            {/* Bot bubble */}
             {isBot && (
               <div>
                 {/* Inline download link, if present */}
@@ -239,23 +251,30 @@ const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
                         {msg.edited && (
                           <div className="edited-label">(edited)</div>
                         )}
+
+                        {/* tiny icon-only actions */}
                         <div className="query-actions">
                           <button
-                            className="run-query-btn"
+                            className="icon-btn"
+                            aria-label="Run query"
+                            title="Run"
                             onClick={() =>
                               handleRunQueryWithFile(cleanedSql, msg)
                             }
                           >
-                            Run
+                            <PlayIcon />
                           </button>
+
                           <button
-                            className="edit-query-btn"
+                            className="icon-btn"
+                            aria-label="Edit SQL"
+                            title="Edit SQL"
                             onClick={() => {
                               setEditingIndex(i);
                               setEditValue(cleanedSql);
                             }}
                           >
-                            Edit SQL
+                            <PencilIcon />
                           </button>
                         </div>
                       </>
@@ -296,7 +315,6 @@ const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
                 {/* SQL results */}
                 {hasRows && (
                   <div className="sql-result" ref={exportWrapRef}>
-                    {/* Export toggle */}
                     <div
                       className="export-controls"
                       style={{ textAlign: "right", marginBottom: 8 }}
@@ -381,7 +399,7 @@ const ChatArea = ({ messages = [], onRunQuery, onConfirmEdit, isLoading }) => {
         );
       })}
 
-      {/* Typing indicator (single) */}
+      {/* Typing indicator */}
       {isLoading && (
         <div className="chat-bubble bot-bubble typing">
           <span className="dot" />

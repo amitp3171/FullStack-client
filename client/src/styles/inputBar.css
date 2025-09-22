@@ -1,16 +1,23 @@
+/* src/styles/InputBar.css */
+
 /* ================= Input Bar ================= */
 .input-bar {
-  position: sticky;
-  bottom: 0;
+  position: fixed;                 /* fixed at bottom */
+  left: 0; right: 0; bottom: 0;
+  height: var(--inputbar-h, 72px);
+  z-index: 1050;
+
   width: 100%;
   padding: 15px 20px;
+  box-sizing: border-box;
+
   background: var(--surface-2);
   border-top: 1px solid var(--border);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 10;
   gap: 10px;
+
   color: var(--text);
   backdrop-filter: saturate(120%) blur(2px);
 }
@@ -29,10 +36,7 @@
   transition: box-shadow .15s ease, border-color .15s ease;
 }
 .chat-input::placeholder { color: var(--muted); }
-.chat-input:focus {
-  border-color: var(--accent);
-  box-shadow: var(--ring);
-}
+.chat-input:focus { border-color: var(--accent); box-shadow: var(--ring); }
 
 .send-btn {
   padding: 12px 20px;
@@ -76,22 +80,16 @@
 .file-preview svg { margin-right: 4px; }
 
 /* ================= Upload button + dropdown ================= */
-.upload-wrap {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
+.upload-wrap { position: relative; display: inline-flex; align-items: center; }
 
 .upload-btn {
   background: var(--surface);
   border: 2px solid var(--text);
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  width: 40px; height: 40px;
   margin: 0 8px;
   cursor: pointer;
-  display: grid;
-  place-items: center;
+  display: grid; place-items: center;
   transition: background .2s, box-shadow .2s, border-color .2s;
   color: var(--text);
 }
@@ -154,9 +152,7 @@ html[data-theme="dark"] .modal-overlay { background: rgba(2,6,23,.65); }
   padding: 14px 14px 6px 14px;
 }
 .modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: flex; align-items: center; justify-content: space-between;
   padding: 6px 4px 8px 6px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 8px;

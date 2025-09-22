@@ -1,69 +1,197 @@
-import React, { useEffect, useState } from "react";
+// src/components/ThemeToggle.jsx
+import React, { useEffect, useMemo, useState } from "react";
 
 const THEME_KEY = "ui.theme"; // "light" | "dark" | "system"
+const PALETTE_KEY = "ui.palette"; // one of PALETTES (used only in dark)
+const PALETTES = [
+  "theme-graphite",
+  "theme-amoled",
+  "theme-mocha",
+  "theme-teal",
+];
 
-function getPreferredTheme() {
-  // use saved first
+function systemPrefersDark() {
+  return (
+    window.matchMedia &&
+    window.matchMedia("(prefers-color-scheme: dark)").matches
+  );
+}
+function resolvedTheme(theme) {
+  return theme === "system" ? (systemPrefersDark() ? "dark" : "light") : theme;
+}
+function applyTheme(theme, palette) {
+  const html = document.documentElement;
+
+  // set data-theme
+  html.setAttribute("data-theme", resolvedTheme(theme));
+
+  // remove all palette classes and apply current (only if dark)
+  html.classList.remove(...PALETTES);
+  if (resolvedTheme(theme) === "dark" && palette) {
+    html.classList.add(palette);
+  }
+}
+
+function readTheme() {
   const saved = localStorage.getItem(THEME_KEY);
-  if (saved === "light" || saved === "dark") return saved;
-  // fall back to system
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
+  if (saved === "light" || saved === "dark" || saved === "system") return saved;
+  // default to system if nothing saved
+  return "system";
+}
+function readPalette() {
+  const saved = localStorage.getItem(PALETTE_KEY);
+  return PALETTES.includes(saved) ? saved : "theme-graphite";
 }
 
 export default function ThemeToggle({ compact = false }) {
-  const [theme, setTheme] = useState(getPreferredTheme());
+  const [theme, setTheme] = useState(readTheme);
+  const [palette, setPalette] = useState(readPalette);
+  const isDarkResolved = useMemo(
+    () => resolvedTheme(theme) === "dark",
+    [theme]
+  );
 
-  // Apply immediately on mount & when theme changes
+  // Apply immediately and persist
   useEffect(() => {
-    const root = document.documentElement;
-    root.setAttribute("data-theme", theme);
+    applyTheme(theme, palette);
     localStorage.setItem(THEME_KEY, theme);
-  }, [theme]);
+    localStorage.setItem(PALETTE_KEY, palette);
+  }, [theme, palette]);
 
-  // Keep in sync if OS theme changes & user hasn't explicitly picked
+  // Keep in sync with OS when theme === "system"
   useEffect(() => {
     const mm = window.matchMedia("(prefers-color-scheme: dark)");
     const onChange = () => {
-      const saved = localStorage.getItem(THEME_KEY);
-      if (!saved || saved === "system") {
-        setTheme(mm.matches ? "dark" : "light");
-      }
+      if (theme === "system") applyTheme("system", palette);
     };
     mm.addEventListener?.("change", onChange);
     return () => mm.removeEventListener?.("change", onChange);
-  }, []);
+  }, [theme, palette]);
 
-  const isDark = theme === "dark";
-  const next = isDark ? "light" : "dark";
+  /* ------------- UI ------------- */
 
+  // Compact: tiny switch (used in your side menu)
+  if (compact) {
+    const pressed = isDarkResolved;
+    const title =
+      theme === "system"
+        ? `System (${pressed ? "dark" : "light"})`
+        : pressed
+        ? "Dark"
+        : "Light";
+
+    // click toggles dark/light; Alt+click cycles light → system → dark
+    const onClick = (e) => {
+      if (e.altKey) {
+        setTheme((t) =>
+          t === "light" ? "system" : t === "system" ? "dark" : "light"
+        );
+      } else {
+        setTheme((t) => (resolvedTheme(t) === "dark" ? "light" : "dark"));
+      }
+    };
+
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-pressed={pressed}
+        title={`${title} — Alt+Click to cycle modes`}
+        style={{
+          position: "relative",
+          width: 44,
+          height: 24,
+          borderRadius: 999,
+          background: "var(--chip-bg)",
+          border: "1px solid var(--chip-border)",
+          cursor: "pointer",
+          padding: 0,
+        }}
+      >
+        <span
+          aria-hidden
+          style={{
+            position: "absolute",
+            top: 2,
+            left: pressed ? 22 : 2, // knob position
+            width: 20,
+            height: 20,
+            borderRadius: "50%",
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            transition: "left .15s ease",
+          }}
+        />
+      </button>
+    );
+  }
+
+  // Full control: segmented + palette select (only shown in dark)
   return (
-    <button
-      type="button"
-      className="button-subtle"
-      aria-pressed={isDark}
-      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      onClick={() => setTheme(next)}
-      style={compact ? { padding: "4px 8px" } : undefined}
+    <div
+      style={{
+        display: "inline-flex",
+        gap: 10,
+        alignItems: "center",
+        color: "var(--text)",
+      }}
     >
-      {/* icon */}
-      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-        {isDark ? (
-          /* sun */
-          <path
-            fill="currentColor"
-            d="M6.76 4.84l-1.8-1.79L3.17 4.84l1.79 1.79M1 13h3v-2H1m9 10h2v-3h-2m8.07-1.36l1.79 1.79l1.79-1.79l-1.79-1.79M20 11v2h3v-2M6.76 19.16l-1.79 1.79l1.79 1.79l1.79-1.79M12 6a6 6 0 100 12 6 6 0 000-12zm0-5h2v3h-2z"
-          />
-        ) : (
-          /* moon */
-          <path
-            fill="currentColor"
-            d="M20.742 13.045A8 8 0 1110.955 3.258a7 7 0 109.787 9.787z"
-          />
-        )}
-      </svg>
-      {!compact && <span>{isDark ? "Dark" : "Light"}</span>}
-    </button>
+      <div
+        role="group"
+        aria-label="Theme"
+        style={{
+          display: "inline-flex",
+          border: "1px solid var(--chip-border)",
+          background: "var(--chip-bg)",
+          borderRadius: 10,
+          overflow: "hidden",
+        }}
+      >
+        {["light", "system", "dark"].map((opt) => {
+          const active = theme === opt;
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => setTheme(opt)}
+              aria-pressed={active}
+              style={{
+                padding: "6px 10px",
+                border: "none",
+                background: active ? "var(--surface)" : "transparent",
+                color: "var(--text)",
+                cursor: "pointer",
+                borderRight:
+                  opt !== "dark" ? "1px solid var(--chip-border)" : "none",
+              }}
+            >
+              {opt[0].toUpperCase() + opt.slice(1)}
+            </button>
+          );
+        })}
+      </div>
+
+      {isDarkResolved && (
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 12, color: "var(--muted)" }}>Palette</span>
+          <select
+            value={palette}
+            onChange={(e) => setPalette(e.target.value)}
+            style={{
+              background: "var(--surface)",
+              color: "var(--text)",
+              border: "1px solid var(--border)",
+              borderRadius: 8,
+              padding: "4px 8px",
+            }}
+          >
+            <option value="theme-graphite">Graphite</option>
+            <option value="theme-amoled">AMOLED</option>
+            <option value="theme-mocha">Mocha</option>
+            <option value="theme-teal">Teal night</option>
+          </select>
+        </label>
+      )}
+    </div>
   );
 }
